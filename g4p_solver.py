@@ -63,7 +63,7 @@ states = GP.subdivide_observation_states(env, bins = (3, 3, 3, 3))
 
 #---------RUN BEST CHROMOSOME---------#
 chromosome = Chromosome(10)
-chromosome.generate_phenotype(5, 5, True, True)
+chromosome.generate_phenotype(6, 2, True, True)
 chromosome.generate_individual(True)
 
 env.seed(0)
@@ -74,7 +74,3 @@ for timestep in range(100): #loop dei timesteps
     action = GP.get_action_from_program(obs, states, chromosome.individual)
     obs, reward, done, info = env.step(action)
 env.close()
-
-#TODO: LOOK AT GRAMMARS' if i_gene_same >= len(gene_seq): 
-#       COUSE IT RETURNS SOMETHING BUT IN CASE I WANT TO 
-#       INSERT A LEAF NODE INSTEAD

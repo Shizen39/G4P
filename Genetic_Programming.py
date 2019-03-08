@@ -17,7 +17,7 @@ def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=Fals
     '''
     GE.MAX_DEPTH = MAX_DEPTH   # max depth of the tree
     GE.MAX_WRAP = MAX_WRAP # max number of time wrapping operator is applied
-            
+    GE.initial_gene_seq = int_genotype
     root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
     tree_pheontype = GE.generate_derivation_tree(int_genotype, root)
 
