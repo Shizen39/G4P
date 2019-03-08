@@ -2,5 +2,3 @@ __pycache__
 _virtualenv-gym
 .vscode
 .dist
-tree_phenotype.png
-program_chromosome.py
