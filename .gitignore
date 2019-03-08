@@ -1,0 +1,7 @@
+__pycache__
+_virtualenv-gym
+.gitignore
+.vscode
+.dist
+tree_chromosome.png
+program_chromosome.py
