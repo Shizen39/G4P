@@ -3,9 +3,10 @@ import numpy as np
 
 global MAX_WRAP         # max number of time that wrap func is applied to the sequence of genes
 global MAX_DEPTH        # max depth of the tree
+
 global restart_ctr      # global counter that count number of time that wrap func is applied
 restart_ctr=0
-global i_gene            # global index that loops through all genes
+global i_gene           # global index that loops through all genes
 i_gene = -1
 
 #-----------DEF GRAMMAR AND TREE/PROGRAM GENERATOR-----------------#
@@ -14,7 +15,8 @@ def expr(gene_seq, tree_depth, node):
     '''
     <expr>:   "if" <cond> ":" _NL _INDENT <expr> _NL                                            # 0
             | "if" <cond> ":" _NL _INDENT <expr> _NL "else:"_NL _INDENT <expr> _NL              # 1
-            | "action =" ACTION                                                                 # 2
+            | <expr> _NL _INDENT<expr>                                                          # 2
+            | "action =" ACTION                                                                 # 3
     '''
     global i_gene
     i_gene+=1
@@ -24,7 +26,9 @@ def expr(gene_seq, tree_depth, node):
             return ext                          # return default terminal (break recursion)
 
     if tree_depth<=MAX_DEPTH:                   # if tree max depth it hasn't yet been reached
-        idx = gene_seq[i_gene] % 3              # pick a rule
+        idx = gene_seq[i_gene] % 4 if node.name!='('+str(i_gene+1)+')2expr' \
+            else gene_seq[i_gene] % 3         #in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
+             # pick a rule
 
         if idx == 0:                                                                            # 0
             child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
@@ -42,7 +46,13 @@ def expr(gene_seq, tree_depth, node):
 
             child3 = Node('('+str(i_gene+3)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(tree_depth-1), tab3='\t'*(tree_depth)))
             expr(gene_seq, tree_depth+1, child3)
-        if idx == 2:                                                                             # 2
+        if idx == 2:
+            child1 = Node('('+str(i_gene+1)+')2expr', parent=node, label='expr', code="")
+            expr(gene_seq, tree_depth, child1)
+
+            child2 = Node('('+str(i_gene+2)+')2expr', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(tree_depth-1)))
+            expr(gene_seq, tree_depth, child2)
+        if idx == 3:                                                                             # 2
             child = Node('('+str(i_gene+1)+')ACTION', parent=node, label='ACT', code="action = ")
             ACTION(gene_seq, child)
     else:

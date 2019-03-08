@@ -3,7 +3,8 @@ from anytree.exporter import DotExporter
 from anytree.dotexport import RenderTreeGraph
 from anytree import PreOrderIter
 import numpy as np
-import Grammar
+
+import Grammatical_Evolution_mapper as GE
 
 def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=False, print_to_shell=False):
     '''
@@ -14,11 +15,11 @@ def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=Fals
                  MAX_WRAP (maximum number of time that wrapping operator is applied to int_genotype)
     Return value : tree_phenotype (root of the generated tree)
     '''
-    Grammar.MAX_DEPTH = MAX_DEPTH   # max depth of the tree
-    Grammar.MAX_WRAP = MAX_WRAP # max number of time wrapping operator is applied
+    GE.MAX_DEPTH = MAX_DEPTH   # max depth of the tree
+    GE.MAX_WRAP = MAX_WRAP # max number of time wrapping operator is applied
             
     root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
-    tree_pheontype = Grammar.generate_derivation_tree(int_genotype, root)
+    tree_pheontype = GE.generate_derivation_tree(int_genotype, root)
 
     if print_to_shell:
         for pre, _, node in RenderTree(tree_pheontype):                                # print tree on terminal
@@ -87,5 +88,6 @@ def get_action_from_program(observation, states, program_chromosome):
         action=loc['get_action'](observation, states)
     except UnboundLocalError:   #observation did not pass through any if else
         print('Assign low fitness')
+        action=0
     
     return action
