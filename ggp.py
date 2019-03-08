@@ -5,26 +5,31 @@ from anytree import PreOrderIter
 import numpy as np
 import Grammar
 
-def generate_tree_from_int(int_chromosome, export_to_png=False, print_to_shell=False):
+def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=False, print_to_shell=False):
     '''
-    Generate chromosome with derivation tree representation
-    obtained from Grammar using int_chromosome as function form
-    genes-rules mapping. 
-    Return value: root of the generated tree
+    Generate derivation tree from int_genotype
+    using MOD genes of the int_genotype as genotype-phenotype mapping function. 
+    Parameters : int_genotype (list of integer genes)
+                 MAX_DEPTH (maximum depth of the generated derivation tree)
+                 MAX_WRAP (maximum number of time that wrapping operator is applied to int_genotype)
+    Return value : tree_phenotype (root of the generated tree)
     '''
+    Grammar.MAX_DEPTH = MAX_DEPTH   # max depth of the tree
+    Grammar.MAX_WRAP = MAX_WRAP # max number of time wrapping operator is applied
+            
     root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
-    tree_chromosome = Grammar.generate_derivation_tree(int_chromosome, root)
+    tree_pheontype = Grammar.generate_derivation_tree(int_genotype, root)
 
     if print_to_shell:
-        for pre, _, node in RenderTree(tree_chromosome):                                # print tree on terminal
+        for pre, _, node in RenderTree(tree_pheontype):                                # print tree on terminal
             print("{}{}".format(pre, node.name)) 
     if export_to_png:
-        RenderTreeGraph(tree_chromosome, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
-            node.label)).to_picture("tree_chromosome.png")                              #
-    return tree_chromosome
+        RenderTreeGraph(tree_pheontype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
+            node.label)).to_picture("tree_pheontype.png")                              #
+    return tree_pheontype
 
 
-def generate_program_from_tree(tree_chromosome, write_to_file=False):
+def generate_program_from_tree(tree_pheontype, write_to_file=False):
     '''
     Generate chromosom with program representation obtained doing
     PRE-ORDER starting from argument passed node (root) and collecting
@@ -32,7 +37,7 @@ def generate_program_from_tree(tree_chromosome, write_to_file=False):
     Return value: variable containing programs' code
     '''
     program_chromosome="def get_action(observation, states):\n\t"                   # Prepare program whit func def and return value
-    for node in PreOrderIter(tree_chromosome):   
+    for node in PreOrderIter(tree_pheontype):   
         program_chromosome+= node.code                                              # get generated program
     program_chromosome+="\n\treturn action"                                          #
 

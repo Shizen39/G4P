@@ -1,7 +1,7 @@
 from anytree import Node
 import numpy as np
 
-global MAX_RESTART      # max number of time that wrap func is applied to the sequence of genes
+global MAX_WRAP         # max number of time that wrap func is applied to the sequence of genes
 global MAX_DEPTH        # max depth of the tree
 global restart_ctr      # global counter that count number of time that wrap func is applied
 restart_ctr=0
@@ -169,7 +169,7 @@ def wrap(gene_seq, ret):
     '''
     global restart_ctr
     restart_ctr+=1
-    if restart_ctr>MAX_RESTART:     #if wrapped too many times, return the same genes and a default terminal string
+    if restart_ctr>MAX_WRAP:     #if wrapped too many times, return the same genes and a default terminal string
         return gene_seq, ret
     else:                           #if can wrap return 2*genes
         gene_seq += gene_seq                  
