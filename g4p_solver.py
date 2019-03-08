@@ -25,14 +25,14 @@ class Chromosome():
         self.phenotype = None
         self.solution = None
 
-    def generate_phenotype(self, MAX_DEPTH, MAX_WRAP=5, export_to_png=False, print_to_shell=False):
+    def generate_phenotype(self, method, MAX_DEPTH, MAX_WRAP=5, to_png=False, to_shell=False):
         '''
         Generate a tree from the self.genotype, and assign it at self.phenotype
         Parameters : MAX_DEPTH (maximum depth of the generated phenotypes' derivation trees)
                      MAX_WRAP  (maximum number of time that wrapping operator is applied to genotype)
         
         '''
-        self.phenotype = GP.generate_tree_from_int(self.genotype, MAX_DEPTH, MAX_WRAP, export_to_png=export_to_png, print_to_shell=print_to_shell)
+        self.phenotype = GP.generate_tree_from_int(self.genotype, method, MAX_DEPTH, MAX_WRAP, to_png=to_png, to_shell=to_shell)
     
     def generate_solution(self, write_to_file=False):
         '''
@@ -68,7 +68,7 @@ states = GP.subdivide_observation_states(env, bins = (3, 3, 3, 3))
 
 #---------RUN BEST CHROMOSOME---------#
 chromosome = Chromosome(GENOTYPE_LEN=10)
-chromosome.generate_phenotype(MAX_DEPTH=6, MAX_WRAP=4)
+chromosome.generate_phenotype(method='full', MAX_DEPTH=6, MAX_WRAP=4, to_png=True)
 chromosome.generate_solution(True)
 
 env.seed(0)

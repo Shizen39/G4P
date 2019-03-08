@@ -10,6 +10,7 @@ global i_gene           # global index that loops through all genes
 i_gene = -1
 
 global initial_gene_seq # global initial gene_seq (used for wrapping purposes)
+global method
 
 #-----------DEF GRAMMAR AND TREE/PROGRAM GENERATOR-----------------#
 #-----------RULES-----------------#
@@ -21,14 +22,17 @@ def expr(gene_seq, tree_depth, node, indent):
             | "action =" ACTION                                                                 # 3
     '''
     global i_gene
+    global method
     i_gene+=1
     if i_gene >= len(gene_seq):                 # if translation from genes to grammrs' rules runned out of genes (i_gene is the index of genes)
         gene_seq = wrap(gene_seq, False)
         
     if tree_depth<MAX_DEPTH:                    # if tree max depth it hasn't yet been reached
-        idx = gene_seq[i_gene] % 4 if node.name!='('+str(i_gene+1)+')2expr' \
-            else gene_seq[i_gene] % 3           # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
-             # pick a rule
+        if method == 'full':
+            idx = gene_seq[i_gene] % 3          # skip terminal ACTION
+        else:
+            idx = gene_seq[i_gene] % 3 if node.name=='('+str(i_gene+1)+')expr1' or node.name=='('+str(i_gene+1)+')expr2' \
+                else gene_seq[i_gene] % 4       # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
 
         if idx == 0:                                                                            # 0
             child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
@@ -47,10 +51,10 @@ def expr(gene_seq, tree_depth, node, indent):
             child3 = Node('('+str(i_gene+3)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)))
             expr(gene_seq, tree_depth+1, child3, indent+1)
         if idx == 2:
-            child1 = Node('('+str(i_gene+1)+')2expr', parent=node, label='expr', code="")
+            child1 = Node('('+str(i_gene+1)+')expr1', parent=node, label='expr', code="")
             expr(gene_seq, tree_depth+1, child1, indent)
 
-            child2 = Node('('+str(i_gene+2)+')2expr', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
+            child2 = Node('('+str(i_gene+2)+')expr2', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
             expr(gene_seq, tree_depth+1, child2, indent)
         if idx == 3:                                                                             # 2
             child = Node('('+str(i_gene+1)+')ACTION', parent=node, label='ACT', code="action = ")
@@ -159,10 +163,16 @@ def ACTION(gene_seq, node):
         Node('('+str(i_gene)+')act', parent=node, label='1', code="1\n")
 
 #-------FUNCTION UTILITIES--------#
-def generate_derivation_tree(gene_seq, root):
+def start_derivating(gene_seq, root, _method, _MAX_DEPTH, _MAX_WRAP, _initial_gene_seq):
     '''
     Starting rule
     '''
+    global method, MAX_DEPTH, MAX_WRAP, initial_gene_seq
+    method = _method
+    MAX_DEPTH = _MAX_DEPTH - 2   # max depth of the tree
+    MAX_WRAP = _MAX_WRAP         # max number of time wrapping operator is applied
+    initial_gene_seq = _initial_gene_seq
+
     expr(gene_seq, 0, root, 2)
     return root
 

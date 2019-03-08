@@ -6,7 +6,7 @@ import numpy as np
 
 import Grammatical_Evolution_mapper as GE
 
-def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=False, print_to_shell=False):
+def generate_tree_from_int(int_genotype, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
     '''
     Generate derivation tree from int_genotype
     using MOD genes of the int_genotype as genotype-phenotype mapping function. 
@@ -15,16 +15,13 @@ def generate_tree_from_int(int_genotype, MAX_DEPTH, MAX_WRAP, export_to_png=Fals
                  MAX_WRAP (maximum number of time that wrapping operator is applied to int_genotype)
     Return value : tree_phenotype (root of the generated tree)
     '''
-    GE.MAX_DEPTH = MAX_DEPTH   # max depth of the tree
-    GE.MAX_WRAP = MAX_WRAP # max number of time wrapping operator is applied
-    GE.initial_gene_seq = int_genotype
     root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
-    tree_pheontype = GE.generate_derivation_tree(int_genotype, root)
+    tree_pheontype = GE.start_derivating(int_genotype, root, method, MAX_DEPTH, MAX_WRAP, _initial_gene_seq = int_genotype)
 
-    if print_to_shell:
+    if to_shell:
         for pre, _, node in RenderTree(tree_pheontype):                                # print tree on terminal
             print("{}{}".format(pre, node.name)) 
-    if export_to_png:
+    if to_png:
         RenderTreeGraph(tree_pheontype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
             node.label)).to_picture("tree_pheontype.png")                              #
     return tree_pheontype
