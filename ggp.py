@@ -1,0 +1,86 @@
+from anytree import Node, RenderTree
+from anytree.exporter import DotExporter
+from anytree.dotexport import RenderTreeGraph
+from anytree import PreOrderIter
+import numpy as np
+import Grammar
+
+def generate_tree_from_int(int_chromosome, export_to_png=False, print_to_shell=False):
+    '''
+    Generate chromosome with derivation tree representation
+    obtained from Grammar using int_chromosome as function form
+    genes-rules mapping. 
+    Return value: root of the generated tree
+    '''
+    root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
+    tree_chromosome = Grammar.generate_derivation_tree(int_chromosome, root)
+
+    if print_to_shell:
+        for pre, _, node in RenderTree(tree_chromosome):                                # print tree on terminal
+            print("{}{}".format(pre, node.name)) 
+    if export_to_png:
+        RenderTreeGraph(tree_chromosome, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
+            node.label)).to_picture("tree_chromosome.png")                              #
+    return tree_chromosome
+
+
+def generate_program_from_tree(tree_chromosome, write_to_file=False):
+    '''
+    Generate chromosom with program representation obtained doing
+    PRE-ORDER starting from argument passed node (root) and collecting
+    all node.code properties, concatenating them in a variable.
+    Return value: variable containing programs' code
+    '''
+    program_chromosome="def get_action(observation, states):\n\t"                   # Prepare program whit func def and return value
+    for node in PreOrderIter(tree_chromosome):   
+        program_chromosome+= node.code                                              # get generated program
+    program_chromosome+="\n\treturn action"                                          #
+
+    if write_to_file:
+        file = open('program_chromosome.py', 'w')                                       # Create file and write in generated programs'string
+        file.write(program_chromosome)                                                  #
+        file.close()   
+    return program_chromosome
+#------------------------------------------#
+
+
+def subdivide_observation_states(env, bins):
+    '''
+    Subdivide each continous state (i) of an observation in 
+    bins[i] number of discrete states (e.g. states[state] = [low_bound, ... i, ..., high_bound]);
+    Return value: list of states
+    '''
+    sp_low, sp_up = env.observation_space.low, env.observation_space.high
+    inf = np.finfo(np.float32).max
+    div_inf = 7000**10
+    bounds = []
+    for i in range(len(sp_low)):
+        if sp_low[i] == -np.inf:
+            sp_low[i] = -inf
+        if sp_up[i] == np.inf:
+            sp_up[i] = inf
+        bounds.append([sp_low[i]/div_inf if sp_low[i] == -inf else sp_low[i], 
+                                    sp_up[i]/div_inf if sp_up[i] == inf else sp_up[i]])
+    states = []
+    for i, v in enumerate(bounds):
+        x = np.histogram(v, bins[i])[1] # subdivide continous interval into equal spaced bins[i] intervals
+        states.append(x)
+    return states
+
+
+def get_action_from_program(observation, states, program_chromosome):
+    '''
+    Run program_chromsome as python code that return an action.
+    program_chromosome could be a string of python code or 
+    a python file; in the latter case pass program_chromosome 
+    parameter as open("./file.py").read()
+    Return value: an action
+    '''
+    loc={}
+    exec(program_chromosome, {}, loc)
+    try:
+        action=loc['get_action'](observation, states)
+    except UnboundLocalError:   #observation did not pass through any if else
+        print('Assign low fitness')
+    
+    return action
