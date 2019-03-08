@@ -13,7 +13,7 @@ global initial_gene_seq # global initial gene_seq (used for wrapping purposes)
 
 #-----------DEF GRAMMAR AND TREE/PROGRAM GENERATOR-----------------#
 #-----------RULES-----------------#
-def expr(gene_seq, tree_depth, node, indent):
+def expr(gene_seq, tree_depth, node):
     '''
     <expr>:   "if" <cond> ":" _NL _INDENT <expr> _NL                                            # 0
             | "if" <cond> ":" _NL _INDENT <expr> _NL "else:"_NL _INDENT <expr> _NL              # 1
@@ -34,24 +34,24 @@ def expr(gene_seq, tree_depth, node, indent):
             child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
             cond(gene_seq, child1)
             
-            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
-            expr(gene_seq, tree_depth+1, child2, indent+1)
+            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(tree_depth)))
+            expr(gene_seq, tree_depth+1, child2)
 
         if idx == 1:                                                                            # 1
             child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
             cond(gene_seq, child1)
             
-            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
-            expr(gene_seq, tree_depth+1, child2, indent+1)
+            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(tree_depth)))
+            expr(gene_seq, tree_depth+1, child2)
 
-            child3 = Node('('+str(i_gene+3)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)))
-            expr(gene_seq, tree_depth+1, child3, indent+1)
+            child3 = Node('('+str(i_gene+3)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(tree_depth-1), tab3='\t'*(tree_depth)))
+            expr(gene_seq, tree_depth+1, child3)
         if idx == 2:
             child1 = Node('('+str(i_gene+1)+')2expr', parent=node, label='expr', code="")
-            expr(gene_seq, tree_depth+1, child1, indent)
+            expr(gene_seq, tree_depth, child1)
 
-            child2 = Node('('+str(i_gene+2)+')2expr', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
-            expr(gene_seq, tree_depth+1, child2, indent)
+            child2 = Node('('+str(i_gene+2)+')2expr', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(tree_depth-1)))
+            expr(gene_seq, tree_depth, child2)
         if idx == 3:                                                                             # 2
             child = Node('('+str(i_gene+1)+')ACTION', parent=node, label='ACT', code="action = ")
             ACTION(gene_seq, child)
@@ -163,7 +163,7 @@ def generate_derivation_tree(gene_seq, root):
     '''
     Starting rule
     '''
-    expr(gene_seq, 0, root, 2)
+    expr(gene_seq, 2, root)
     return root
 
 def wrap(gene_seq, is_terminal):

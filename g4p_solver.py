@@ -17,23 +17,28 @@ class Chromosome():
     def __init__(self, GENOTYPE_LEN):
         ''' 
         Parameters : GENOTYPE_LEN (number of genes of the genotype)
-        Attributes : genotype (list of integer that corresponds to the set of genes of the genotype)
-                     phenotype (derivation tree rappresentation of the chromosome, that corresponds to the set of genes (nodes) encoded by the genotype)
-                     individual (python code rappresentation of the chromosome, that corresponds to the set of genes (line of codes) translated by the phenotype)
+        Attributes : - genotype (list of integer that corresponds to the set of genes of the genotype)
+                     - phenotype (derivation tree rappresentation of the chromosome, that corresponds to the set of genes (nodes) encoded by the genotype)
+                     - solution (python code rappresentation of the chromosome, that corresponds to the set of genes (line of codes) translated by the phenotype)
         '''
-        self.genotype = [np.random.randint(0,4)]+list(np.random.randint(0,1000,size=GENOTYPE_LEN-1))
+        self.genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=GENOTYPE_LEN-1))
         self.phenotype = None
-        self.individual = None
+        self.solution = None
 
-    def generate_phenotype(self, MAX_DEPTH=5, MAX_WRAP=5, export_to_png=False, print_to_shell=False):
+    def generate_phenotype(self, MAX_DEPTH, MAX_WRAP=5, export_to_png=False, print_to_shell=False):
         '''
-        MAX_DEPTH : maximum depth of the generated phenotypes' derivation trees
-        MAX_WRAP : maximum number of time that wrapping operator is applied to genotype
+        Generate a tree from the self.genotype, and assign it at self.phenotype
+        Parameters : MAX_DEPTH (maximum depth of the generated phenotypes' derivation trees)
+                     MAX_WRAP  (maximum number of time that wrapping operator is applied to genotype)
+        
         '''
         self.phenotype = GP.generate_tree_from_int(self.genotype, MAX_DEPTH, MAX_WRAP, export_to_png=export_to_png, print_to_shell=print_to_shell)
     
-    def generate_individual(self, write_to_file=False):
-        self.individual = GP.generate_program_from_tree(self.phenotype, write_to_file= write_to_file)
+    def generate_solution(self, write_to_file=False):
+        '''
+        Generate a python program from the self.phenotype, assigning it at self.solution
+        '''
+        self.solution = GP.generate_program_from_tree(self.phenotype, write_to_file= write_to_file)
 
 #-----prepare gym-----#
 env = gym.make('CartPole-v0')
@@ -62,15 +67,24 @@ states = GP.subdivide_observation_states(env, bins = (3, 3, 3, 3))
 
 
 #---------RUN BEST CHROMOSOME---------#
-chromosome = Chromosome(10)
-chromosome.generate_phenotype(6, 2, True, True)
-chromosome.generate_individual(True)
+chromosome = Chromosome(GENOTYPE_LEN=10)
+chromosome.generate_phenotype(MAX_DEPTH=6, MAX_WRAP=4)
+chromosome.generate_solution(True)
 
 env.seed(0)
 
 obs = env.reset()
 for timestep in range(100): #loop dei timesteps
     env.render()
-    action = GP.get_action_from_program(obs, states, chromosome.individual)
+    action = GP.get_action_from_program(obs, states, chromosome.solution)
     obs, reward, done, info = env.step(action)
 env.close()
+
+
+#TODO: Actually implemented GROW populating (grow tree until a terminal is reached),
+#        but i want to implement also FULL (grow tree until max_depth reached, then place a terminal)
+#        so i can grow+full = ramped
+
+#       Probably want to modify Grammatical_Ev as class so i can set global variables
+#           as class variables and instantiate the class whit different variables 
+#           (for parallel running, if i don't do this probably it braks couse of setting different values for the same variable in parallel)
