@@ -8,8 +8,8 @@ import Grammatical_Evolution_mapper as GE
 
 def generate_tree_from_int(int_genotype, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
     '''
-    Generate derivation tree from int_genotype
-    using MOD genes of the int_genotype as genotype-phenotype mapping function. 
+    Generate (phenotype) derivation tree from a (genotype) list of int
+    Genotype-phenotype mapping function is the MOD operator between genes of the genotype and rules of the Grammar. 
     Parameters : int_genotype (list of integer genes)
                  MAX_DEPTH (maximum depth of the generated derivation tree)
                  MAX_WRAP (maximum number of time that wrapping operator is applied to int_genotype)
@@ -29,8 +29,8 @@ def generate_tree_from_int(int_genotype, method, MAX_DEPTH, MAX_WRAP, to_png=Fal
 
 def generate_program_from_tree(tree_pheontype, write_to_file=False):
     '''
-    Generate chromosom with program representation obtained doing
-    PRE-ORDER starting from argument passed node (root) and collecting
+    Generate (solution) chromosom with program representation obtained doing
+    PRE-ORDER starting from (phenotype) argument passed node (root) and collecting
     all node.code properties, concatenating them in a variable.
     Return value: variable containing programs' code
     '''
@@ -45,31 +45,6 @@ def generate_program_from_tree(tree_pheontype, write_to_file=False):
         file.close()   
     return program_chromosome
 #------------------------------------------#
-
-
-def subdivide_observation_states(env, bins):
-    '''
-    Subdivide each continous state (i) of an observation in 
-    bins[i] number of discrete states (e.g. states[state] = [low_bound, ... i, ..., high_bound]);
-    Return value: list of states
-    '''
-    sp_low, sp_up = env.observation_space.low, env.observation_space.high
-    inf = np.finfo(np.float32).max
-    div_inf = 7000**10
-    bounds = []
-    for i in range(len(sp_low)):
-        if sp_low[i] == -np.inf:
-            sp_low[i] = -inf
-        if sp_up[i] == np.inf:
-            sp_up[i] = inf
-        bounds.append([sp_low[i]/div_inf if sp_low[i] == -inf else sp_low[i], 
-                                    sp_up[i]/div_inf if sp_up[i] == inf else sp_up[i]])
-    states = []
-    for i, v in enumerate(bounds):
-        x = np.histogram(v, bins[i])[1] # subdivide continous interval into equal spaced bins[i] intervals
-        states.append(x)
-    return states
-
 
 def get_action_from_program(observation, states, program_chromosome):
     '''
