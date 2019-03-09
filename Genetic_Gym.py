@@ -34,29 +34,31 @@ from Chromosome import Chromosome
 #         
 #
 
-class Evolution():
-    def __init__(self, n_chromosomes, n_generations, mutation_prob, max_elite, seed, genotype_len, MAX_DEPTH):
-        self.genotype_len = genotype_len
-        self.MAX_DEPTH = MAX_DEPTH
-
+class Population():
+    def __init__(self, n_chromosomes, mutation_prob, max_elite, seed):
+        # Inizialization parameters
         self.n_chromosomes = n_chromosomes
-        self.n_generation = n_generations
         self.mutation_prob = mutation_prob
         self.max_elite = max_elite
         self.seed = seed
+        # Population attribbutes
+        self.chromosomes         = []
+        self.chromosomes_scores  = []
+        self.chromosomes_fitness = []
+        self.survival_threashold = None
+        self.best_individual     = None
     
-    def initialize_chromosomes(self):
-        min_genotype_len = self.genotype_len - int(self.genotype_len/2)
-        max_genotype_len = self.genotype_len + int(self.genotype_len/2)
+    def initialize_chromosomes(self, MAX_DEPTH, genotype_len):
+        min_genotype_len = genotype_len - int(genotype_len/2)
+        max_genotype_len = genotype_len + int(genotype_len/2)
         # set genotype
         population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in self.n_chromosomes]
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
-                chromosome.generate_phenotype('grow', self.MAX_DEPTH)
+                chromosome.generate_phenotype('grow', MAX_DEPTH)
             else:
-                chromosome.generate_phenotype('full', self.MAX_DEPTH)
-        
+                chromosome.generate_phenotype('full', MAX_DEPTH)
         return population
 
     def select_elites(self, population):
