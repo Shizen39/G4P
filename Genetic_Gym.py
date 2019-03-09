@@ -1,3 +1,16 @@
+'''
+This file define the Genetic Operators using Chromosome.py representation of an individual and Gyms' specs.
+
+In particular it defines two classes:
+- Evolution: class that contains:
+    - all Grammar Guided Genetic Programming parameters (n_chromosomes, n_generation, genotype_len...)
+    - all Genetic Operators (initialize, natural_selection, crossingover, mutation)
+
+- Environment: class that contains all gyms' specific functions in relation with the chromosome representation 
+    
+'''
+
+
 import numpy as np
 import gym.wrappers
 import gym.spaces
@@ -14,7 +27,7 @@ from multiprocessing import Pool
 import multiprocessing
 #from joblib import Parallel, delayed
 
-import Genetic_Programming as GP
+from Chromosome import Chromosome
 
 
 #TO ASK : MAX_DEPTH is chromosom-specific? (e.g. can I have different max_depth from two different chromosome?)
@@ -32,29 +45,35 @@ class Evolution():
         self.max_elite = max_elite
         self.seed = seed
     
-    def create_random_population(self):
+    def initialize_chromosomes(self):
         min_genotype_len = self.genotype_len - int(self.genotype_len/2)
         max_genotype_len = self.genotype_len + int(self.genotype_len/2)
-        genotype_population = [Chromosome(np.random.randint(min_genotype_len, max_genotype_len)) for _ in self.n_chromosomes]
-        population = [chromosome.generate_phenotype('grow', self.MAX_DEPTH) for chromosome in genotype_population[:int(len(genotype_population)/2)]]
-        population += [chromosome.generate_phenotype('full', self.MAX_DEPTH) for chromosome in genotype_population[int(len(genotype_population)/2):]]
+        # set genotype
+        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in self.n_chromosomes]
+        # set phenotype
+        for i, chromosome in enumerate(population):
+            if i < int(len(population)/2):
+                chromosome.generate_phenotype('grow', self.MAX_DEPTH)
+            else:
+                chromosome.generate_phenotype('full', self.MAX_DEPTH)
+        
         return population
 
-    def select_elite(self, population, population_fitness, elite_threashold, population_scores):
-        elite = [e for i, e in enumerate(population)            # survive only those fitness 
-                if population_fitness[i] >= elite_threashold]   # is greater then  mean of all fitness
-        elite_score = [e for i, e in enumerate(population_scores) 
-                if population_fitness[i] >= elite_threashold]
+    def select_elites(self, population):
+        elites = [e for i, e in enumerate(population.individuals)                            # survive only those fitness 
+                if population.individuals_fitness[i] >= population.survival_threashold]     # is greater then  mean of all fitness
+        elite_scores = [e for i, e in enumerate(population.individuals_scores) 
+                if population.individuals_fitness[i] >= population.survival_threashold]
 
-        elite_fitness = list(np.mean(elite_score, axis=1))
+        elite_fitness = list(np.mean(elite_scores, axis=1))
 
-        if len(elite) > self.max_elite:
-            while len(elite)>self.max_elite:
+        if len(elites) > self.max_elite:
+            while len(elites)>self.max_elite:
                 rm= np.argmin(elite_fitness)
-                elite.pop(rm)
-                elite_score.pop(rm)
+                elites.pop(rm)
+                elite_scores.pop(rm)
                 elite_fitness.pop(rm)
-        return elite, elite_fitness
+        return elites, elite_scores, elite_fitness
 
     def crossover(self, parent_A, parent_B):
         '''  
@@ -80,46 +99,10 @@ class Evolution():
         mutated = child
         for k in mutated:
             if np.random.uniform() < p:
-                mutated[k] = np.random.randint(0,env.action_space.n)
+                mutated[k] = np.random.randint(0,2)     # there (action_space.n)
         return mutated
 
 
-class Chromosome():
-    def __init__(self, GENOTYPE_LEN):
-        ''' 
-        Parameters : GENOTYPE_LEN (number of genes of the genotype)
-        Attributes : - genotype (list of integer that corresponds to the set of genes of the genotype)
-                     - phenotype (derivation tree rappresentation of the chromosome, that corresponds to the set of genes (nodes) encoded by the genotype)
-                     - solution (python code rappresentation of the chromosome, that corresponds to the set of genes (line of codes) translated by the phenotype)
-        '''
-        self.genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=GENOTYPE_LEN-1))
-        self.phenotype = None
-        self.solution = None
-        self.fitness = None
-
-    def generate_phenotype(self, method, MAX_DEPTH, MAX_WRAP=5, to_png=False, to_shell=False):
-        '''
-        Generate a tree from the self.genotype, and assign it at self.phenotype
-        Parameters : MAX_DEPTH (maximum depth of the generated phenotypes' derivation trees)
-                     MAX_WRAP  (maximum number of time that wrapping operator is applied to genotype)
-        
-        '''
-        self.phenotype = GP.generate_tree_from_int(self.genotype, method, MAX_DEPTH, MAX_WRAP, to_png=to_png, to_shell=to_shell)
-    
-    def generate_solution(self, write_to_file=False):
-        '''
-        Generate a python program from the self.phenotype, assigning it at self.solution
-        '''
-        self.solution = GP.generate_program_from_tree(self.phenotype, write_to_file= write_to_file)
-
-    def execute_solution(self, observation, states):
-        '''
-        Execute generated python program
-        Parameters : observation (list of states of the environment)
-                     states (list of all possible states of an observation of the environment)
-        Return value: an action
-        '''
-        return GP.get_action_from_program(observation, states, self.solution)
 
 
 class Environment():
@@ -169,6 +152,9 @@ class Environment():
     
     def evaluate_chromosome(self, chromosome, i, prnt=False, render=False):
         chromosome_scores = deque(maxlen = self.env.spec.trials)
+        # set chromosome solutions' code
+        chromosome.generate_solution()
+        # run solution code
         for episode in range(self.n_episodes):
             reward = self.run_one_episode(chromosome, episode, prnt, render)
             chromosome_scores.append(reward)

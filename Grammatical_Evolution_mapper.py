@@ -1,3 +1,29 @@
+'''
+This file define the Grammar rules used in Chromosome.py and their derivation trees
+
+In particular it:
+
+- define rules of the GRAMMAR as recursive function
+    - non-terminal rules are represented by functions that calls other functions
+    - terminal rules are represented by functions that don't calls any other functions
+
+- create the DERIVATION TREE selecting derivation rules through a sequence of integer that
+    maps the MOD of that integer with a rule
+    - a node tree contains:
+        - id (unique node identifier)
+        - parent (parent node, except for the root node)
+        - label (rule name)
+        - code (encoded python peace of code)
+    - the tree is builded by:
+        - starting with a root node and the starting-rule 
+        - appending a child node to the tree for each function that they each terminal and 
+        non-terminal function calls
+
+- create the executable PYTHON CODE appending each rule production to the relative node
+
+'''
+
+
 from anytree import Node
 import numpy as np
     
