@@ -2,8 +2,9 @@
 This file define the Genetic Operators using Chromosome.py representation of an individual and Gyms' specs.
 
 In particular it defines two classes:
-- Evolution: class that contains:
+- Population: class that contains:
     - all Grammar Guided Genetic Programming parameters (n_chromosomes, n_generation, genotype_len...)
+    - population attributes that defines population as a set of Chromosome objects
     - all Genetic Operators (initialize, natural_selection, crossingover, mutation)
 
 - Environment: class that contains all gyms' specific functions in relation with the chromosome representation 
@@ -61,11 +62,11 @@ class Population():
                 chromosome.generate_phenotype('full', MAX_DEPTH)
         return population
 
-    def select_elites(self, population):
-        elites = [e for i, e in enumerate(population.individuals)                            # survive only those fitness 
-                if population.individuals_fitness[i] >= population.survival_threashold]     # is greater then  mean of all fitness
-        elite_scores = [e for i, e in enumerate(population.individuals_scores) 
-                if population.individuals_fitness[i] >= population.survival_threashold]
+    def do_natural_selection(self):
+        elites = [e for i, e in enumerate(self.population.individuals)                            # survive only those fitness 
+                if self.population.individuals_fitness[i] >= self.population.survival_threashold]     # is greater then  mean of all fitness
+        elite_scores = [e for i, e in enumerate(self.population.individuals_scores) 
+                if self.population.individuals_fitness[i] >= self.population.survival_threashold]
 
         elite_fitness = list(np.mean(elite_scores, axis=1))
 
@@ -75,7 +76,9 @@ class Population():
                 elites.pop(rm)
                 elite_scores.pop(rm)
                 elite_fitness.pop(rm)
-        return elites, elite_scores, elite_fitness
+        self.chromosomes          = elites
+        self.chromosomes_scores   = elite_scores
+        self.chromosomes_fitness  = elite_fitness
 
     def crossover(self, parent_A, parent_B):
         '''  

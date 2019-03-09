@@ -55,11 +55,7 @@ def evolve(population, environment, n_generations):
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        elites, elite_scores, elite_fitness = population.select_elites(population)
-
-        population.chromosomes          = elites
-        population.chromosomes_scores   = elite_scores
-        population.chromosomes_fitness  = elite_fitness
+        elites, elite_scores, elite_fitness = population.do_natural_selection(population)
         
         elites_len = len(elites)
         #------------------------------#
@@ -82,7 +78,7 @@ def evolve(population, environment, n_generations):
         mutated_offsprings = [population.mutate(child, p=population.mutation_prob) for child in offsprings]    
         #------------------------------#
 
-        #-----------NATURAL SELECTION-----------# 
+        #-----------NEXT GENERATION-----------# 
         # population = elite
         population = Population(n_chromosomes=len(mutated_offsprings), mutation_prob=population.mutation_prob, max_elite=population.max_elite, seed=population.seed)
         population.chromosomes = mutated_offsprings
