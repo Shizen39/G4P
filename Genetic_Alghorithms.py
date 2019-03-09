@@ -17,9 +17,72 @@ import multiprocessing
 import Genetic_Programming as GP
 
 
-#TO ASK : MAX_DEPTH and MAX_WRAP are chromosom-specific? (e.g. can I have different max_depth and max_wrap from two different chromosome?)
-#         maybe not couse of multiprocessing? (they are global variables in Grammatica_Evolution_mapper.py)
+#TO ASK : MAX_DEPTH is chromosom-specific? (e.g. can I have different max_depth from two different chromosome?)
+#         
 #
+
+class Evolution():
+    def __init__(self, n_chromosomes, n_generations, mutation_prob, max_elite, seed, genotype_len, MAX_DEPTH):
+        self.genotype_len = genotype_len
+        self.MAX_DEPTH = MAX_DEPTH
+
+        self.n_chromosomes = n_chromosomes
+        self.n_generation = n_generations
+        self.mutation_prob = mutation_prob
+        self.max_elite = max_elite
+        self.seed = seed
+    
+    def create_random_population(self):
+        min_genotype_len = self.genotype_len - int(self.genotype_len/2)
+        max_genotype_len = self.genotype_len + int(self.genotype_len/2)
+        genotype_population = [Chromosome(np.random.randint(min_genotype_len, max_genotype_len)) for _ in self.n_chromosomes]
+        population = [chromosome.generate_phenotype('grow', self.MAX_DEPTH) for chromosome in genotype_population[:int(len(genotype_population)/2)]]
+        population += [chromosome.generate_phenotype('full', self.MAX_DEPTH) for chromosome in genotype_population[int(len(genotype_population)/2):]]
+        return population
+
+    def select_elite(self, population, population_fitness, elite_threashold, population_scores):
+        elite = [e for i, e in enumerate(population)            # survive only those fitness 
+                if population_fitness[i] >= elite_threashold]   # is greater then  mean of all fitness
+        elite_score = [e for i, e in enumerate(population_scores) 
+                if population_fitness[i] >= elite_threashold]
+
+        elite_fitness = list(np.mean(elite_score, axis=1))
+
+        if len(elite) > self.max_elite:
+            while len(elite)>self.max_elite:
+                rm= np.argmin(elite_fitness)
+                elite.pop(rm)
+                elite_score.pop(rm)
+                elite_fitness.pop(rm)
+        return elite, elite_fitness
+
+    def crossover(self, parent_A, parent_B):
+        '''  
+        parent1, parent2
+        child1 = parent1 + swap_random_subtree(parent2)
+        child2 = parent2 + swap_random_subtree(parent1)
+        '''
+        pass
+
+    def verify_crossover(self, child1, child2, offsprings):
+        if child1 in offsprings:
+            while child1 in offsprings:
+                child1 = self.mutate(child1)
+        if child2 in offsprings:
+            while child2 in offsprings:
+                child2 = self.mutate(child2)
+        return child1, child2
+
+    def mutate(self, child, p=0.05):
+        '''
+        child.phenotype = replace_random_subtree(child.phenotype)
+        '''
+        mutated = child
+        for k in mutated:
+            if np.random.uniform() < p:
+                mutated[k] = np.random.randint(0,env.action_space.n)
+        return mutated
+
 
 class Chromosome():
     def __init__(self, GENOTYPE_LEN):
@@ -66,6 +129,7 @@ class Environment():
         self.states =  self.subdivide_observation_states(bins)
         self.env_seed = self.env.seed(0)
         self.coverged = False
+        self.pool = Pool()
         
 
     def subdivide_observation_states(self, bins):
@@ -104,20 +168,21 @@ class Environment():
         return episode_reward
     
     def evaluate_chromosome(self, chromosome, i, prnt=False, render=False):
-        chromosome_score = deque(maxlen = self.env.spec.trials)
+        chromosome_scores = deque(maxlen = self.env.spec.trials)
         for episode in range(self.n_episodes):
             reward = self.run_one_episode(chromosome, episode, prnt, render)
-            chromosome_score.append(reward)
-            if np.mean(chromosome_score) >= self.env.spec.reward_threshold and episode>=self.env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
+            chromosome_scores.append(reward)
+            if np.mean(chromosome_scores) >= self.env.spec.reward_threshold and episode>=self.env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
-        print("Chromosome ",i,"fitness = ",np.mean(chromosome_score))
-        return list(chromosome_score)
+        print("Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
+        chromosome.fitness = np.mean(chromosome_scores)
+        return list(chromosome_scores)
     
-    def parallel_evaluate_population(self, pool, population):
+    def parallel_evaluate_population(self, population):
         population_scores = [] 
         jobs=[]
         for i,chromosome in enumerate(population):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)
-            jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i]))
+            jobs.append(self.pool.apply_async(self.evaluate_chromosome, [chromosome, i]))
         for j in jobs:
             if not self.converged:
                 if not j.ready():
@@ -127,13 +192,13 @@ class Environment():
                 if np.mean(score)>=self.env.spec.reward_threshold:
                     self.converged = True
             else:
-                pool.terminate()
+                self.pool.terminate()
         return population_scores
 
 
 
 #-----prepare gym-----#
-env = Environment(env_id='CartPole-v0', n_episodes=n_episodes, bins=(3,3,3,3))
+
 
 
 
@@ -157,7 +222,9 @@ env = Environment(env_id='CartPole-v0', n_episodes=n_episodes, bins=(3,3,3,3))
 
 
 
-#---------RUN BEST CHROMOSOME---------#
+#---------  USAGE   --------#
+env = Environment(env_id='CartPole-v0', n_episodes=n_episodes, bins=(3,3,3,3))
+
 chromosome = Chromosome(GENOTYPE_LEN=10)
 chromosome.generate_phenotype(method='full', MAX_DEPTH=6, MAX_WRAP=4, to_png=True)
 chromosome.generate_solution(True)
