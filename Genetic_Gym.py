@@ -39,7 +39,6 @@ class Population():
     '''
     This class represent a set of chromosomes that runs on a generation.
     Args:
-        n_chromosomes (int): number of chromosomes in that population
         mutation_prob (float): probability of a single gene of a chromosome to mutate to a random gene
         max_elite (int): maximum number of chromosome that will survive after their evaluation (elites)
         seed (int): numpy seed
@@ -69,10 +68,11 @@ class Population():
         and then - for each of them - generate the relative phenotype.
 
         Args:
+            n_chromosomes (int): number of chromosomes in that population
+            genotype_len: numbers of genes in the genotype. all genotypes would have random length 
+                between genotype_len-(genotype_len/2) and genotype_len+(genotype_len/2)
             MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
-            genotype_len: numbers of genes in the genotype. all genotypes would have random length 
-                          between genotype_len-(genotype_len/2) and genotype_len+(genotype_len/2)
 
         Returns:
             population: a set of chromosomes with their .genotype and .phenotype already setted
@@ -80,14 +80,14 @@ class Population():
         min_genotype_len = genotype_len - int(genotype_len/2)
         max_genotype_len = genotype_len + int(genotype_len/2)
         # set genotype
-        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in n_chromosomes]
+        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in range(n_chromosomes)]
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
                 chromosome.generate_phenotype('grow', MAX_DEPTH, MAX_WRAP)
             else:
                 chromosome.generate_phenotype('full', MAX_DEPTH, MAX_WRAP)
-        return population
+        self.chromosomes = population
 
     def do_natural_selection(self):
         '''
@@ -118,8 +118,7 @@ class Population():
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
         '''
-        pass
-
+        return parent_A, parent_B
     def verify_crossover(self, child1, child2, offsprings):
         if child1 in offsprings:
             while child1 in offsprings:
@@ -282,22 +281,6 @@ class Environment():
 
 
 
-
-#---------  USAGE   --------#
-env = Environment(env_id='CartPole-v0', n_episodes=n_episodes, bins=(3,3,3,3))
-
-chromosome = Chromosome(GENOTYPE_LEN=10)
-chromosome.generate_phenotype(method='full', MAX_DEPTH=6, MAX_WRAP=4, to_png=True)
-chromosome.generate_solution(True)
-
-env.env.seed(0)
-
-obs = env.env.reset()
-for timestep in range(100): #loop dei timesteps
-    env.env.render()
-    action = chromosome.execute_solution(obs, env.states)
-    obs, reward, done, info = env.env.step(action)
-env.env.close()
 
 
 #TODO: 
