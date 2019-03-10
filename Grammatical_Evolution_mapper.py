@@ -189,15 +189,25 @@ def ACTION(gene_seq, node):
         Node('('+str(i_gene)+')act', parent=node, label='1', code="1\n")
 
 #-------FUNCTION UTILITIES--------#
-def start_derivating(gene_seq, root, _method, _MAX_DEPTH, _MAX_WRAP, _initial_gene_seq):
+def start_derivating(gene_seq, root, _method, _MAX_DEPTH, _MAX_WRAP):
     '''
-    Starting rule
+    Starting production rule.
+
+    Args:
+        gene_seq (list(int)): the set of genes (integers) of the genotype
+        root (AnyTree.Node): starting node of the derivation tree
+        _method (str): method used for generate the tree (full or grow)
+        _MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
+        _MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
+
+    Returns:
+        root (AnyTree.Node): the initial root node with its descendents
     '''
     global method, MAX_DEPTH, MAX_WRAP, initial_gene_seq
     method = _method
     MAX_DEPTH = _MAX_DEPTH - 2   # max depth of the tree
     MAX_WRAP = _MAX_WRAP         # max number of time wrapping operator is applied
-    initial_gene_seq = _initial_gene_seq
+    initial_gene_seq = gene_seq
 
     expr(gene_seq, 0, root, 2)
     return root

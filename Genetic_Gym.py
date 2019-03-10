@@ -36,6 +36,21 @@ from Chromosome import Chromosome
 #
 
 class Population():
+    '''
+    This class represent a set of chromosomes that runs on a generation.
+    Args:
+        n_chromosomes (int): number of chromosomes in that population
+        mutation_prob (float): probability of a single gene of a chromosome to mutate to a random gene
+        max_elite (int): maximum number of chromosome that will survive after their evaluation (elites)
+        seed (int): numpy seed
+
+    Attributes:
+        chromosomes (list(Chromosomes())): list of all chromosomes in that population
+        chromosomes_scores (list(list(int))): list of all gym episodes rewards for each chromosomes
+        chromosomes_fitness (list(float)): mean of chromosome_scores for each chromosomes scores
+        survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
+        best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
+    '''
     def __init__(self, n_chromosomes, mutation_prob, max_elite, seed):
         # Inizialization parameters
         self.n_chromosomes = n_chromosomes
@@ -49,7 +64,20 @@ class Population():
         self.survival_threashold = None
         self.best_individual     = None
     
-    def initialize_chromosomes(self, MAX_DEPTH, genotype_len):
+    def initialize_chromosomes(self, MAX_DEPTH, genotype_len, MAX_WRAP=5):
+        '''
+        Initialize initial population (generation 0) by generating first a set of genotype
+        and then - for each of them - generate the relative phenotype.
+
+        Args:
+            MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
+            MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
+            genotype_len: numbers of genes in the genotype. all genotypes would have random length 
+                          between genotype_len-(genotype_len/2) and genotype_len+(genotype_len/2)
+
+        Returns:
+            population: a set of chromosomes with their .genotype and .phenotype already setted
+        '''
         min_genotype_len = genotype_len - int(genotype_len/2)
         max_genotype_len = genotype_len + int(genotype_len/2)
         # set genotype
@@ -57,16 +85,20 @@ class Population():
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
-                chromosome.generate_phenotype('grow', MAX_DEPTH)
+                chromosome.generate_phenotype('grow', MAX_DEPTH, MAX_WRAP)
             else:
-                chromosome.generate_phenotype('full', MAX_DEPTH)
+                chromosome.generate_phenotype('full', MAX_DEPTH, MAX_WRAP)
         return population
 
     def do_natural_selection(self):
-        elites = [e for i, e in enumerate(self.population.individuals)                            # survive only those fitness 
-                if self.population.individuals_fitness[i] >= self.population.survival_threashold]     # is greater then  mean of all fitness
-        elite_scores = [e for i, e in enumerate(self.population.individuals_scores) 
-                if self.population.individuals_fitness[i] >= self.population.survival_threashold]
+        '''
+        Select the elites chromosomes from actual population (based on their fitness value)
+        and remove non-selected chromosomes from the population.
+        '''
+        elites = [e for i, e in enumerate(self.chromosomes)                     # survive only those fitness 
+                if self.chromosomes_fitness[i] >= self.survival_threashold]     # is greater then  mean of all fitness
+        elite_scores = [e for i, e in enumerate(self.chromosomes_scores) 
+                if self.chromosomes_fitness[i] >= self.survival_threashold]
 
         elite_fitness = list(np.mean(elite_scores, axis=1))
 
@@ -82,6 +114,7 @@ class Population():
 
     def crossover(self, parent_A, parent_B):
         '''  
+        Produce offsprings combining random parts of two chromosomes and generating two offsprings
         parent1, parent2
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
@@ -99,7 +132,7 @@ class Population():
 
     def mutate(self, child, p=0.05):
         '''
-        child.phenotype = replace_random_subtree(child.phenotype)
+        Mutate genes of a chromosomes
         '''
         mutated = child
         for k in mutated:
@@ -111,6 +144,13 @@ class Population():
 
 
 class Environment():
+    '''
+    This class contains all gyms' specific functions in relation with the chromosome representation .
+    Args:
+        env_id (str): gym environment name
+        n_episodes (int): number of episodes for each chromosome evaluation
+        bins (list(int)): list that divide each state of all possible observations in discrete intervalls
+    '''
     def __init__(self, env_id, n_episodes, bins):
         self.env = gym.make(env_id)
         self.n_episodes = n_episodes
@@ -122,9 +162,12 @@ class Environment():
 
     def subdivide_observation_states(self, bins):
         '''
-        Subdivide each continous state (i) of an observation in 
-        bins[i] number of discrete states (e.g. states[state] = [low_bound, ... i, ..., high_bound]);
-        Return value: list of states
+        Use bins[i] to subdivide each continous state i of an observation in bins[i]
+        number of discrete states (e.g. states[state] = [low_bound, ..., discrete_state_k, ..., high_bound]);
+        Args:
+            bins (list(int)): list that divide each state of all possible observations in discrete intervalls
+        Returs: 
+            states (list(list(float))): list of list of discrete states
         '''
         sp_low, sp_up = self.env.observation_space.low, self.env.observation_space.high
         inf = np.finfo(np.float32).max
@@ -144,6 +187,16 @@ class Environment():
         return states
     
     def run_one_episode(self, chromosome, episode, prnt=False, render=False):
+        '''
+        Run a single gym episode (composed by n timesteps), until that episode reach a terminal state (done = True).
+
+        Args:
+            chromosome (Chromosome()): actual chromosome that it's going to be evaluated
+            episode (int): actual episode
+        
+        Returns:
+            episode_reward (int): sum of all episode rewards (earned on each timesteps)
+        '''
         episode_reward = 0
         done = False
         obs = self.env.reset()
@@ -156,6 +209,15 @@ class Environment():
         return episode_reward
     
     def evaluate_chromosome(self, chromosome, i, prnt=False, render=False):
+        '''
+        Run self.n_episodes gym episodes with actual chromosome.
+        
+        Args: 
+            chromosome (Chromosome())
+        
+        Returns:
+            chromosome_scores (list(int)): list of all scores of the chromosome, of all episodes
+        '''
         chromosome_scores = deque(maxlen = self.env.spec.trials)
         # set chromosome solutions' code
         chromosome.generate_solution()
@@ -170,6 +232,15 @@ class Environment():
         return list(chromosome_scores)
     
     def parallel_evaluate_population(self, population):
+        '''
+        Evaluate all chromosomes of the population (in parallel - using multiprocessing)
+
+        Args:   
+            population (list(Chromosome()))
+        
+        Returns:
+            population_scores (list(list(int))): list of all chromosomes list of rewards
+        '''
         population_scores = [] 
         jobs=[]
         for i,chromosome in enumerate(population):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)

@@ -2,10 +2,8 @@
 This is the main execution files that use class utilities from Genetic_Gym.py
 
 In particular it defines:
-- Population class (as a set of chromosome and the corresponding fitness values)
 - evolve() function that describe the population flow (init, evaluate, select, crossingover, mutate, ...)
-
-In the main it execute evolve() using parametrized Genetic_Gym.population and Genetic_Gym.Environment,
+- main() function execute evolve() using parametrized Genetic_Gym.Population and Genetic_Gym.Environment,
 plotting all single generation chromosomes and their population informations in multiple graphs
 and finally (and eventually) showing the evolved chromosome in action
 '''
@@ -55,9 +53,9 @@ def evolve(population, environment, n_generations):
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        elites, elite_scores, elite_fitness = population.do_natural_selection(population)
+        population.do_natural_selection(population)
         
-        elites_len = len(elites)
+        elites_len = len(population.chromosomes)
         #------------------------------#
 
         #--------------CROSSING OVER--------------# 
