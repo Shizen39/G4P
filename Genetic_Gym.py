@@ -154,8 +154,7 @@ class Environment():
         self.n_episodes = n_episodes
         self.states =  self.subdivide_observation_states(bins)
         self.env_seed = self.env.seed(0)
-        self.coverged = False
-        self.pool = Pool()
+        self.converged = False
         
 
     def subdivide_observation_states(self, bins):
@@ -229,7 +228,7 @@ class Environment():
         chromosome.fitness = np.mean(chromosome_scores)
         return list(chromosome_scores)
     
-    def parallel_evaluate_population(self, population):
+    def parallel_evaluate_population(self, population, pool):
         '''
         Evaluate all chromosomes of the population (in parallel - using multiprocessing)
 
@@ -241,8 +240,8 @@ class Environment():
         '''
         population_scores = [] 
         jobs=[]
-        for i,chromosome in enumerate(population):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)
-            jobs.append(self.pool.apply_async(self.evaluate_chromosome, [chromosome, i]))
+        for i,chromosome in enumerate(population.chromosomes):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)
+            jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i]))
         for j in jobs:
             if not self.converged:
                 if not j.ready():
@@ -252,7 +251,7 @@ class Environment():
                 if np.mean(score)>=self.env.spec.reward_threshold:
                     self.converged = True
             else:
-                self.pool.terminate()
+                pool.terminate()
         return population_scores
 
 

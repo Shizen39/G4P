@@ -46,7 +46,6 @@ def expr(gene_seq, tree_depth, node, indent):
             | "action =" ACTION                                                                 # 3
     '''
     global i_gene
-    print(i_gene)
     global method
     i_gene+=1
     if i_gene >= len(gene_seq):                 # if translation from genes to grammrs' rules runned out of genes (i_gene is the index of genes)
@@ -206,7 +205,7 @@ def start_derivating(gene_seq, root, _method, _MAX_DEPTH, _MAX_WRAP):
     wrap_ctr=0
     global i_gene           # global index that loops through all genes
     i_gene = -1
-    
+
     global method, MAX_DEPTH, MAX_WRAP, initial_gene_seq
     method = _method
     MAX_DEPTH = _MAX_DEPTH - 2   # max depth of the tree

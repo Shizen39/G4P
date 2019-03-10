@@ -50,9 +50,7 @@ class Chromosome():
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
         '''
         root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
-        print('mapping ',self.genotype)
         self.phenotype = GE.start_derivating(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
-        print('mapped ',self.genotype)
         if to_shell:
             for pre, _, node in RenderTree(self.phenotype):                                # print tree on terminal
                 print("{}{}".format(pre, node.name)) 
