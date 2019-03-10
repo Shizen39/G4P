@@ -41,7 +41,6 @@ class Population():
     Args:
         mutation_prob (float): probability of a single gene of a chromosome to mutate to a random gene
         max_elite (int): maximum number of chromosome that will survive after their evaluation (elites)
-        seed (int): numpy seed
 
     Attributes:
         chromosomes (list(Chromosomes())): list of all chromosomes in that population
@@ -50,11 +49,10 @@ class Population():
         survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
         best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
     '''
-    def __init__(self, mutation_prob, max_elite, seed):
+    def __init__(self, mutation_prob, max_elite):
         # Inizialization parameters
         self.mutation_prob = mutation_prob
         self.max_elite = max_elite
-        self.seed = seed
         # Population attribbutes
         self.chromosomes         = []
         self.chromosomes_scores  = []
@@ -62,7 +60,7 @@ class Population():
         self.survival_threashold = None
         self.best_individual     = None
     
-    def initialize_chromosomes(self, n_chromosomes, genotype_len, MAX_DEPTH, MAX_WRAP=5):
+    def initialize_chromosomes(self, n_chromosomes, genotype_len, MAX_DEPTH, MAX_WRAP=5, to_png=False):
         '''
         Initialize initial population (generation 0) by generating first a set of genotype
         and then - for each of them - generate the relative phenotype.
@@ -73,7 +71,7 @@ class Population():
                 between genotype_len-(genotype_len/2) and genotype_len+(genotype_len/2)
             MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
-
+            to_png (boolean): export each phenotype tree on png files
         Returns:
             population: a set of chromosomes with their .genotype and .phenotype already setted
         '''
@@ -84,9 +82,9 @@ class Population():
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
-                chromosome.generate_phenotype('grow', MAX_DEPTH, MAX_WRAP)
+                chromosome.generate_phenotype('grow', MAX_DEPTH, MAX_WRAP, to_png=to_png)
             else:
-                chromosome.generate_phenotype('full', MAX_DEPTH, MAX_WRAP)
+                chromosome.generate_phenotype('full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
         self.chromosomes = population
 
     def do_natural_selection(self):
@@ -150,7 +148,6 @@ class Environment():
         self.env = gym.make(env_id)
         self.n_episodes = n_episodes
         self.states =  self.subdivide_observation_states(bins)
-        self.env_seed = self.env.seed(0)
         self.converged = False
         
 
@@ -202,7 +199,7 @@ class Environment():
         if prnt: print('V' if episode_reward == 200 else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
         return episode_reward
     
-    def evaluate_chromosome(self, chromosome, i, prnt=False, render=False):
+    def evaluate_chromosome(self, chromosome, i, to_file, prnt=False, render=False):
         '''
         Run self.n_episodes gym episodes with actual chromosome.
         
@@ -212,9 +209,10 @@ class Environment():
         Returns:
             chromosome_scores (list(int)): list of all scores of the chromosome, of all episodes
         '''
+        self.env.seed(0)
         chromosome_scores = deque(maxlen = self.env.spec.trials)
         # set chromosome solutions' code
-        chromosome.generate_solution()
+        chromosome.generate_solution(to_file)
         # run solution code
         for episode in range(self.n_episodes):
             reward = self.run_one_episode(chromosome, episode, prnt, render)
@@ -222,15 +220,16 @@ class Environment():
             if np.mean(chromosome_scores) >= self.env.spec.reward_threshold and episode>=self.env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
         print("Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
-        chromosome.fitness = np.mean(chromosome_scores)
         return list(chromosome_scores)
     
-    def parallel_evaluate_population(self, population, pool):
+    def parallel_evaluate_population(self, population, pool, to_file=False):
         '''
         Evaluate all chromosomes of the population (in parallel - using multiprocessing)
 
         Args:   
             population (list(Chromosome()))
+            pool (multiprocessing.Pool)
+            to_file (bool)
         
         Returns:
             population_scores (list(list(int))): list of all chromosomes list of rewards
@@ -238,11 +237,11 @@ class Environment():
         population_scores = [] 
         jobs=[]
         for i,chromosome in enumerate(population.chromosomes):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)
-            jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i]))
+            jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i, to_file]))
         for j in jobs:
             if not self.converged:
                 if not j.ready():
-                    j.wait()
+                    j.wait()    # ensure order
                 score=j.get()
                 population_scores.append(score)
                 if np.mean(score)>=self.env.spec.reward_threshold:

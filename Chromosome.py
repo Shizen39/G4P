@@ -32,13 +32,11 @@ class Chromosome():
         genotype (list(int)): the set of genes of the genotype
         phenotype (AnyTree.Node): derivation tree rappresentation of the chromosome, that corresponds to the set of genes (nodes) encoded by the genotype
         solution (str): python code rappresentation of the chromosome, that corresponds to the set of genes (line of codes) translated by the phenotype
-        fitness (float): fitness score of this chromosome
     '''
     def __init__(self, GENOTYPE_LEN):
         self.genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=GENOTYPE_LEN-1)) # ensure that it starts with rule 1 or 2
         self.phenotype = None
         self.solution = None
-        self.fitness = None
 
     def generate_phenotype(self, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
         '''
@@ -48,6 +46,8 @@ class Chromosome():
         Args:
             MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
+            to_png (boolean): export tree on png file
+            to_shell (boolean): print tree on shell
         '''
         root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
         self.phenotype = GE.start_derivating(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
@@ -56,14 +56,17 @@ class Chromosome():
                 print("{}{}".format(pre, node.name)) 
         if to_png:
             RenderTreeGraph(self.phenotype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
-                node.label)).to_picture("tree_phenotype.png")                              #
+                node.label)).to_picture("tree_phenotype_{}.png".format(self))                              #
 
 
-    def generate_solution(self, write_to_file=False):
+    def generate_solution(self, to_file=False):
         '''
         Generate solution (python program)
         The program representation of the phenotype is obtained doing PRE-ORDER starting from root node (phenotype)
         and collecting all node.code properties, concatenating them in a string variable.
+
+        Args:
+            to_file (bool): write program to a file
         '''
         program_chromosome="def get_action(observation, states):\n\t"                   # Prepare program whit func def and return value
         for node in PreOrderIter(self.phenotype):   
@@ -72,8 +75,8 @@ class Chromosome():
         
         self.solution = program_chromosome
 
-        if write_to_file:
-            file = open('program_solution.py', 'w')                                    # Create file and write in generated programs'string
+        if to_file:
+            file = open('program_solution_{}.py'.format(self), 'w')                                    # Create file and write in generated programs'string
             file.write(self.solution)                                                  #
             file.close()   
 
@@ -92,7 +95,7 @@ class Chromosome():
         try:
             action=loc['get_action'](observation, states)
         except UnboundLocalError:   #observation did not pass through any if else
-            print('Assign low fitness')
+            #print('Assign low fitness')
             action= np.random.randint(0,2) #there (action_space.n)
         
         return action
