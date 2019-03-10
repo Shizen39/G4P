@@ -51,9 +51,8 @@ class Population():
         survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
         best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
     '''
-    def __init__(self, n_chromosomes, mutation_prob, max_elite, seed):
+    def __init__(self, mutation_prob, max_elite, seed):
         # Inizialization parameters
-        self.n_chromosomes = n_chromosomes
         self.mutation_prob = mutation_prob
         self.max_elite = max_elite
         self.seed = seed
@@ -64,7 +63,7 @@ class Population():
         self.survival_threashold = None
         self.best_individual     = None
     
-    def initialize_chromosomes(self, MAX_DEPTH, genotype_len, MAX_WRAP=5):
+    def initialize_chromosomes(self, n_chromosomes, genotype_len, MAX_DEPTH, MAX_WRAP=5):
         '''
         Initialize initial population (generation 0) by generating first a set of genotype
         and then - for each of them - generate the relative phenotype.
@@ -81,7 +80,7 @@ class Population():
         min_genotype_len = genotype_len - int(genotype_len/2)
         max_genotype_len = genotype_len + int(genotype_len/2)
         # set genotype
-        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in self.n_chromosomes]
+        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in n_chromosomes]
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
