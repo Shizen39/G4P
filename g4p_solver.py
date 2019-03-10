@@ -52,13 +52,13 @@ def evolve(population, environment, n_chromosomes, n_generations):
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        population.do_natural_selection(population)
+        population.do_natural_selection()
         
         elites_len = len(population.chromosomes)
         #------------------------------#
 
         #--------------CROSSING OVER--------------# 
-        ranks = list(reversed(np.argsort(population.chromosomes)))
+        ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
         offsprings = []
         for i in range(elites_len):
             for j in range(i+1,elites_len):

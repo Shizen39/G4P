@@ -133,9 +133,6 @@ class Population():
         Mutate genes of a chromosomes
         '''
         mutated = child
-        for k in mutated:
-            if np.random.uniform() < p:
-                mutated[k] = np.random.randint(0,2)     # there (action_space.n)
         return mutated
 
 
