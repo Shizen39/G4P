@@ -3,9 +3,9 @@ This file define the Chromosome representation using the grammar defined in
 Grammatical_Evolution_mapper.py
 
 In particular it defines the representations of a single chromosome as a:
-genotype (a sequence of random integer genes)
-phenotype (a derivation tree builded using both genotype and Grammar rules)
-solution (a python code generated through the phenoype)
+- genotype (a sequence of random integer genes)
+- phenotype (a derivation tree builded using both genotype and Grammar rules)
+- solution (a python code generated through the phenoype)
 
 and defines the corresponding functions to generate them.
 '''
@@ -49,7 +49,7 @@ class Chromosome():
             to_png (boolean): export tree on png file
             to_shell (boolean): print tree on shell
         '''
-        root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
+        root = Node('('+str(0)+')expr-start', label='(-1) expr', code='')                      # root of derivation tree
         parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
         
         self.phenotype = parser.start_derivating('expr')

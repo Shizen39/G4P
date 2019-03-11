@@ -20,6 +20,11 @@ import gym
 import time
 import multiprocessing
 
+from anytree import Node, PreOrderIter, RenderTree
+from anytree.dotexport import RenderTreeGraph
+from anytree.exporter import DotExporter
+from anytree.search import find
+
 
 from collections import deque
 import matplotlib.pyplot as plt         
@@ -114,6 +119,7 @@ class Population():
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
         '''
+        # TODO
         return parent_A, parent_B
 
     def verify_crossover(self, child1, child2, offsprings):
@@ -125,13 +131,36 @@ class Population():
                 child2 = self.mutate(child2)
         return child1, child2
 
-    def mutate(self, child, p=0.05):
+    def mutate(self, root, p=0.05):
         '''
         Mutate genes of a chromosomes
         '''
-        mutated = child
+        # #Retrieve max node.id walking through right childs
+        # childs_node = root.children
+        # while childs_node[-1] !=None:
+        #     childs_node = childs_node[-1].children
+        #     if childs_node[-1].is_leaf:
+        #         childs_node = childs_node[-1]
+        #         break
+        # max_id = int(''.join(filter(str.isdigit, childs_node.name)))
+        # #generate random id that will be the random picked node
+        # rand_id = np.random.randint(max_id)
+        # #list of nodes names that can be picked (only non-terminals) 
+        # #MAYBE ALSO COND???
+        # non_terminals = ['({})expr'.format(rand_id), '({})expr_a'.format(rand_id), '({})expr_b'.format(rand_id),
+        #     '({})mutexpr'.format(rand_id), '({})mutexpr_a'.format(rand_id), '({})mutexpr_b'.format(rand_id),]
 
-        return mutated
+        # #find that node
+        # subgraph = find(root, lambda node: node.name in non_terminals)
+        # id_of_x = int(''.join(filter(str.isdigit, subgraph.name)))
+        # #create random subtree
+        # mutation = Node('('+str(id_of_x)+')mutexpr_b', label='expr-mutated', code="")
+        
+        # new_children = list(subgraph.parent.children)
+        # new_children[subgraph.parent.children.index(subgraph)] = mutation
+        # subgraph.parent.children = tuple(new_children)
+
+        return root
 
 
 
@@ -249,36 +278,3 @@ class Environment():
             else:
                 pool.terminate()
         return population_scores
-
-
-
-#-----prepare gym-----#
-
-
-
-
-#---------INIT POPULATION----------#
-#use ramped for deriv. tree to ensure the validity of initial pop (e.g. all leaf are terminals)
-
-
-
-#---------EVAL POPULATION----------#
-
-#return best_chromosome_tree
-
-#---------CROSSING OVER---------#
-#anytree stuffs
-
-#---------MUTATE----------#
-#anytree stuffs
-
-#---------NEXT GENERATION----------#
-
-
-
-
-
-#TODO: 
-#       Probably want to modify Grammatical_Ev as class so i can set global variables
-#           as class variables and instantiate the class whit different variables 
-#           (for parallel running, if i don't do this probably it braks couse of setting different values for the same variable in parallel)

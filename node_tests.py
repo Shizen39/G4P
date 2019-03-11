@@ -21,9 +21,6 @@ RenderTreeGraph(root, nodeattrfunc=lambda node: 'label="{}"'.format( # export tr
 
 
 
-'''
-If mutate only one node
-'''
 #retrieve max node id
 childs_node = root.children
 while childs_node[-1] !=None:
@@ -36,7 +33,9 @@ while childs_node[-1] !=None:
     
 max_id_for_tree = int(''.join(filter(str.isdigit, childs_node.name)))
 #generate random id that will be the random picked node
-rand_id = 2#np.random.randint(max_id_for_tree)
+print(max_id_for_tree)
+rand_id = 1#np.random.randint(max_id_for_tree)
+print(rand_id)
 #list of nodes names that can be picked (only non-terminals) 
 #MAYBE ALSO COND???
 non_terminals = ['({})expr'.format(rand_id), '({})expr_a'.format(rand_id), '({})expr_b'.format(rand_id),
@@ -44,6 +43,7 @@ non_terminals = ['({})expr'.format(rand_id), '({})expr_a'.format(rand_id), '({})
 
 #find that node
 x = find(root, lambda node: node.name in non_terminals)
+print(x)
 id_of_x = int(''.join(filter(str.isdigit, x.name)))
 #create random subtree
 mutation = Node('('+str(id_of_x)+')mutexpr_b', label='expr-mutated', code="")
@@ -51,12 +51,16 @@ mchild1 = Node('('+str(id_of_x+1)+')mutcond', parent=mutation, label='mucond', c
 mchild2 = Node('('+str(id_of_x+2)+')mutexpr', parent=mutation, label='mutexpr', code=":\n{tab1}".format(tab1='\t'*(1)))
 mchild2child = Node('('+str(id_of_x+3)+')mutACTION', parent=mchild2, label='mutACT', code="action = ")
 #attach mutated root to parent of x (appending it at the x parents' children list)
-x.parent.children += mutation,
 #detach x (by modifing its parents' children list and removing it from there)
-mutation.parent.children = mutation.parent.children[:mutation.parent.children.index(x)]\
-    + mutation.parent.children[mutation.parent.children.index(x)+1:]
+tmp_children = list(x.parent.children)
+tmp_children[x.parent.children.index(x)] = mutation
+x.parent.children = tuple(tmp_children)
+
+#detach x (by modifing its parents' children list and removing it from there)
 
 
 RenderTreeGraph(root, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
                 node.label)).to_picture("test_mutated.png")
+
+
 
