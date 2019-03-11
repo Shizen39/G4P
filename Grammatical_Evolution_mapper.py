@@ -222,7 +222,7 @@ def wrap(gene_seq, is_terminal):
     if is_terminal:
         # if it's translating a terminal, finish the translation wrapping gene_seq by only 1 element
         # so the next time (if it's not another terminal and if MAX_WRAP is reached, it will stop wrapping)
-        gene_seq += initial_gene_seq[22%len(initial_gene_seq)],
+        gene_seq += initial_gene_seq[len(gene_seq) % len(initial_gene_seq)],
     else:
         # if it's translating a non-terminal, increment the counter
         global wrap_ctr
