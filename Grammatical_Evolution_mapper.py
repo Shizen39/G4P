@@ -26,7 +26,7 @@ In particular it:
 
 from anytree import Node
 import numpy as np
-    
+
 global MAX_WRAP         # max number of time that wrap func is applied to the sequence of genes
 global MAX_DEPTH        # max depth of the tree
 
@@ -55,30 +55,30 @@ def expr(gene_seq, tree_depth, node, indent):
         if method == 'full':
             idx = gene_seq[i_gene] % 3          # skip terminal ACTION
         else:
-            idx = gene_seq[i_gene] % 3 if node.name=='('+str(i_gene+1)+')expr1' or node.name=='('+str(i_gene+1)+')expr2' \
+            idx = gene_seq[i_gene] % 3 if node.name=='('+str(i_gene+1)+')expr_a' or node.name=='('+str(i_gene+1)+')expr_b' \
                 else gene_seq[i_gene] % 4       # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
 
         if idx == 0:                                                                            # 0
-            child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
+            child1 = Node('('+str(i_gene)+')cond', parent=node, label='cond', code="if ")
             cond(gene_seq, child1)
             
-            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
+            child2 = Node('('+str(i_gene+1)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
             expr(gene_seq, tree_depth+1, child2, indent+1)
 
         if idx == 1:                                                                            # 1
-            child1 = Node('('+str(i_gene+1)+')cond', parent=node, label='cond', code="if ")
+            child1 = Node('('+str(i_gene)+')cond', parent=node, label='cond', code="if ")
             cond(gene_seq, child1)
             
-            child2 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
+            child2 = Node('('+str(i_gene+1)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
             expr(gene_seq, tree_depth+1, child2, indent+1)
 
-            child3 = Node('('+str(i_gene+3)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)))
+            child3 = Node('('+str(i_gene+2)+')expr', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)))
             expr(gene_seq, tree_depth+1, child3, indent+1)
         if idx == 2:
-            child1 = Node('('+str(i_gene+1)+')expr1', parent=node, label='expr', code="")
+            child1 = Node('('+str(i_gene+1)+')expr_a', parent=node, label='expr', code="")
             expr(gene_seq, tree_depth+1, child1, indent)
 
-            child2 = Node('('+str(i_gene+2)+')expr2', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
+            child2 = Node('('+str(i_gene+2)+')expr_b', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
             expr(gene_seq, tree_depth+1, child2, indent)
         if idx == 3:                                                                             # 2
             child = Node('('+str(i_gene+1)+')ACTION', parent=node, label='ACT', code="action = ")

@@ -46,7 +46,7 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
 
         #-------------EXIT IF CONVERGED-------------#
         population.best_policy = population.chromosomes[np.argmax(population.chromosomes_fitness)]
-        print('\n ****** Generation', generation+1, 'max score = ', max(population.chromosomes_fitness), ' elite_threashold = ',population.survival_threashold,' ******\n')
+        print('\n ****** Generation', generation+1, 'max score = ', max(population.chromosomes_fitness), ' elite_threashold = ',np.mean(population.chromosomes_fitness),' ******\n')
         all_results.append(population)
         if environment.converged:
             break
@@ -110,14 +110,14 @@ if __name__ == '__main__':
     )
     environment = Environment(
         env_id          = 'CartPole-v0',
-        n_episodes      = 250,
+        n_episodes      = 150,
         bins            = (3,3,3,3)
     )
 
     env, all_results = evolve(
         population, 
         environment, 
-        initial_n_chr = 100, 
+        initial_n_chr = 5, 
         n_generations = 1,
         seed          = sid
     )#123456 #2400846564

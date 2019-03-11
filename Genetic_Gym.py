@@ -31,9 +31,6 @@ import multiprocessing
 from Chromosome import Chromosome
 
 
-#TO ASK : MAX_DEPTH is chromosom-specific? (e.g. can I have different max_depth from two different chromosome?)
-#         
-#
 
 class Population():
     '''
@@ -105,6 +102,7 @@ class Population():
                 elites.pop(rm)
                 elite_scores.pop(rm)
                 elite_fitness.pop(rm)
+        print("Survived [ ",len(elites)," / ",len(self.chromosomes)," ] chromosomes")
         self.chromosomes          = elites
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
@@ -117,6 +115,7 @@ class Population():
         child2 = parent2 + swap_random_subtree(parent1)
         '''
         return parent_A, parent_B
+
     def verify_crossover(self, child1, child2, offsprings):
         if child1 in offsprings:
             while child1 in offsprings:
@@ -131,6 +130,9 @@ class Population():
         Mutate genes of a chromosomes
         '''
         mutated = child
+        import Grammatical_Evolution_mapper as GE
+        print(GE.i_gene)
+
         return mutated
 
 
