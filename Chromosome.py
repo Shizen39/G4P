@@ -17,7 +17,7 @@ from anytree.dotexport import RenderTreeGraph
 from anytree import PreOrderIter
 import numpy as np
 
-import Grammatical_Evolution_mapper as GE
+from Grammatical_Evolution_mapper import Parser
 
 
 class Chromosome():
@@ -42,7 +42,7 @@ class Chromosome():
         '''
         Generate phenotype from genotype (derivation tree from a list of int).
         Genotype-phenotype mapping function is the MOD operator between genes of the genotype and rules of the Grammar. 
-
+        
         Args:
             MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
@@ -50,7 +50,9 @@ class Chromosome():
             to_shell (boolean): print tree on shell
         '''
         root = Node('('+str(0)+')expr-start', label='expr', code='')                      # root of derivation tree
-        self.phenotype = GE.start_derivating(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
+        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
+        
+        self.phenotype = parser.start_derivating('expr')
         if to_shell:
             for pre, _, node in RenderTree(self.phenotype):                                # print tree on terminal
                 print("{}{}".format(pre, node.name)) 

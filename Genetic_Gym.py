@@ -130,8 +130,6 @@ class Population():
         Mutate genes of a chromosomes
         '''
         mutated = child
-        import Grammatical_Evolution_mapper as GE
-        print(GE.i_gene)
 
         return mutated
 
