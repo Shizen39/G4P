@@ -158,14 +158,6 @@ class Population():
         print(level)
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
-        if selected_node.is_leaf:
-            print('entered')
-            selected_node = selected_node.parent.parent
-            level_number=len(level)-2
-        elif selected_node.children[0].is_leaf:
-            print('entered')
-            selected_node = selected_node.parent
-            level_number=len(level)-1
         level_number=len(level)
         mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
         color = selected_node.color if selected_node.colorscheme=='grays9' else str(int(selected_node.color)+1) if int(selected_node.color)<9 else '1'
