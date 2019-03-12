@@ -113,7 +113,7 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
 
-    def crossover(self, parent_A, parent_B, a, b, reward_threshold):
+    def crossover(self, parent_A, parent_B, a, b, reward_threshold): #TODO: PASS BORDER ON START_DER
         '''  
         Produce offsprings combining random parts of two chromosomes and generating two offsprings
         parent1, parent2
@@ -122,20 +122,34 @@ class Population():
         '''
         offspring_a = parent_A.phenotype
         offspring_b = parent_B.phenotype
-
-        A_levels = [[node for node in children] for children in LevelOrderGroupIter(offspring_a)]
-        A_levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
+        # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
+        A_levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
+                    for children in LevelOrderGroupIter(offspring_a)]
+        while A_levels[-1]==[]:
+            A_levels.pop()
         max_depth = len(A_levels)
         # random select a level in which a node will be random selected for mutation
-        # he higher the level - the higher the probability is to be choosed
+        # the higher the level - the higher the probability is to be choosed
         A_levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
         print('PROBS= ',A_levels_prob)
         level = np.random.choice(A_levels, p=A_levels_prob)
+        # random choose a node in that level and retrieve its id
+        selected_node = np.random.choice(level)
+        level_number = len(level)
+        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
+        if selected_node.color.rsplit('/',1)[0]=='/grays9':
+            color = selected_node.color
+        elif selected_node.color.rsplit('/',1)[0]=='/oranges9':
+            border = '/oranges9/'+selected_node.color.rsplit('/',1)[1]
+        else: 
+            if int(selected_node.color)<9:
+                color = str(int(selected_node.color)+1)
+            else:
+                color = '1'
         
-        # NB: RETURN CHROMOSOMES WITH CROSSED OVER TREES!!! NOT TREE
         return parent_A, parent_B
 
-    def mutate(self, chromosome, p=0.05):
+    def mutate(self, chromosome, p=0.05): #TODO: MODIFY BORDER='9' AS ON CROSSOVER (CREATE VAR BORDER IN IF COLOR)
         '''
         Mutate genes of a chromosomes.
         retrieve tree max_depth (height?)
@@ -148,30 +162,37 @@ class Population():
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
         levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
                     for children in LevelOrderGroupIter(root)]
-        #levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
         while levels[-1]==[]:
             levels.pop()
-        print(levels)
         max_depth = len(levels)
         # random select a level in which a node will be random selected for mutation
-        # he higher the level - the higher the probability is to be choosed
+        # the higher the level - the higher the probability is to be choosed
         levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
-        print('PROBS= ',levels_prob)
         level = np.random.choice(levels, p=levels_prob)
 
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
         level_number=len(level)
         mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
-        color = selected_node.color if selected_node.colorscheme=='grays9' else str(int(selected_node.color)+1) if int(selected_node.color)<9 else '1'
+        color = selected_node.color
+        if selected_node.color.rsplit('/',1)[0]=='/blues9':
+            border = '/blues9/9'
+            color = '/oranges9/1'
+        else: 
+            border = '/oranges9/9'
+            if int(selected_node.color.rsplit('/',1)[1])<9:
+                color = '/oranges9/'+str(int(selected_node.color.rsplit('/',1)[1])+1)
+            else:
+                color = '/oranges9/1'
+        print(color, ' and ', border)
         print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color, label='expr', code=selected_node.code, indent=selected_node.indent, colorscheme='oranges9', color=color )
+            mutated = Node(selected_node.name+'_mut_'+color, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
             # instantiate a new parser 
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent, extra_id='_mut_'+color)
@@ -179,9 +200,9 @@ class Population():
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color, label='cond', code=selected_node.code, colorscheme='oranges9', color=color)
+            mutated = Node(selected_node.name+'_mut_'+color, label='cond', code=selected_node.code, color=color, border='9')
             # instantiate a new parser 
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('cond', tree_depth=level_number, extra_id='_mut_'+color)

@@ -50,8 +50,8 @@ class Chromosome():
             to_png (boolean): export tree on png file
             to_shell (boolean): print tree on shell
         '''
-        root = Node('('+str(0)+')expr-start', label='expr', code='', color='1',colorscheme='greys9')                     # root of derivation tree
-        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP, color='1',colorscheme='greys9')
+        root = Node('('+str(0)+')expr-start', label='expr', code='', color='/greys9/1', border='/greys9/9')                     # root of derivation tree
+        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
         
         self.phenotype = parser.start_derivating('expr')
         if to_shell:
@@ -108,6 +108,6 @@ class Chromosome():
         if not os.path.exists('./outputs/{}'.format(self)):
             os.mkdir('./outputs/{}'.format(self))
         DotExporter(self.phenotype, 
-            nodeattrfunc=lambda node: 'label="{}", style=filled, colorscheme={}, color=9, fillcolor={}'.format(node.label, node.colorscheme, node.color),
-            edgeattrfunc=lambda node,child: 'colorscheme={}, color=9'.format(node.colorscheme)
+            nodeattrfunc=lambda node: 'label="{}", style=filled, color={}, fillcolor={}'.format(node.label, node.border, node.color),
+            edgeattrfunc=lambda node,child: 'color={}'.format(node.border)
             ).to_picture("./outputs/{}/GEN-{}.png".format(self, generation))
