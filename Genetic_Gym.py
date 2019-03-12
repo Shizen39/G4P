@@ -143,21 +143,27 @@ class Population():
         '''
         root = chromosome.phenotype
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
-        levels = [[node for node in children] for children in LevelOrderGroupIter(root)]
-        levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
+        levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
+                    for children in LevelOrderGroupIter(root)]
+        #levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
+        while levels[-1]==[]:
+            levels.pop()
+        print(levels)
         max_depth = len(levels)
         # random select a level in which a node will be random selected for mutation
         # he higher the level - the higher the probability is to be choosed
         levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
         print('PROBS= ',levels_prob)
         level = np.random.choice(levels, p=levels_prob)
-
+        print(level)
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
         if selected_node.is_leaf:
+            print('entered')
             selected_node = selected_node.parent.parent
             level_number=len(level)-2
         elif selected_node.children[0].is_leaf:
+            print('entered')
             selected_node = selected_node.parent
             level_number=len(level)-1
         level_number=len(level)
@@ -168,22 +174,22 @@ class Population():
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name, label='expr', code=selected_node.code, color=color, colorscheme='oranges9')
+            mutated = Node(selected_node.name+'_mut_'+color, label='expr', code=selected_node.code, indent=selected_node.indent, colorscheme='oranges9', color=color )
             # instantiate a new parser 
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
             # set parser parameters to those of the selected_node and start parsing
-            parser.i_gene = mut_node_id
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
+            parser.i_gene = mut_node_id+1
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent, extra_id='_mut_'+color)
         
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, colorscheme='oranges9')
+            mutated = Node(selected_node.name+'_mut_'+color, label='cond', code=selected_node.code, colorscheme='oranges9', color=color)
             # instantiate a new parser 
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
             # set parser parameters to those of the selected_node and start parsing
-            parser.i_gene = mut_node_id
-            mutated = parser.start_derivating('cond', tree_depth=level_number)
+            parser.i_gene = mut_node_id+1
+            mutated = parser.start_derivating('cond', tree_depth=level_number, extra_id='_mut_'+color)
 
         # modify the list of parents' selected_node childrens
         new_children = list(selected_node.parent.children)
