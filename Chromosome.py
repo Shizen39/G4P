@@ -108,6 +108,6 @@ class Chromosome():
         if not os.path.exists('./outputs/{}'.format(self)):
             os.mkdir('./outputs/{}'.format(self))
         DotExporter(self.phenotype, 
-            nodeattrfunc=lambda node: 'label="{}", style=filled, color={}, fillcolor={}'.format(node.label, node.border, node.color),
-            edgeattrfunc=lambda node,child: 'color={}'.format(node.border)
+            nodeattrfunc=lambda node: 'label="{}", style=filled, color="{}", fillcolor="{}"'.format(node.label, node.border, node.color),
+            edgeattrfunc=lambda node,child: 'color="{}"'.format(node.border)
             ).to_picture("./outputs/{}/GEN-{}.png".format(self, generation))

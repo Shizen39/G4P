@@ -190,22 +190,22 @@ class Population():
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
+            mutated = Node(selected_node.name+'_mut_'+color.rsplit('/',1)[1], label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
             # instantiate a new parser 
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent, extra_id='_mut_'+color)
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent, extra_id='_mut_'+color.rsplit('/',1)[1])
         
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color, label='cond', code=selected_node.code, color=color, border='9')
+            mutated = Node(selected_node.name+'_mut_'+color.rsplit('/',1)[1], label='cond', code=selected_node.code, color=color, border=border)
             # instantiate a new parser 
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
-            mutated = parser.start_derivating('cond', tree_depth=level_number, extra_id='_mut_'+color)
+            mutated = parser.start_derivating('cond', tree_depth=level_number, extra_id='_mut_'+color.rsplit('/',1)[1])
 
         # modify the list of parents' selected_node childrens
         new_children = list(selected_node.parent.children)
