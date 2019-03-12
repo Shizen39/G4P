@@ -125,21 +125,27 @@ class Population():
         child_B = copy.deepcopy(parent_B)
         tree_a = child_A.phenotype
         tree_b = child_B.phenotype
-        # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
-        A_levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
-                    for children in LevelOrderGroupIter(tree_a)]
-        while A_levels[-1]==[]:
-            A_levels.pop()
-        max_depth = len(A_levels)
-        # random select a level in which a node will be random selected for mutation
-        # the higher the level - the higher the probability is to be choosed
-        A_levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
-        print('PROBS= ',A_levels_prob)
-        level = np.random.choice(A_levels, p=A_levels_prob)
-        # random choose a node in that level and retrieve its id
-        selected_node_A = np.random.choice(level)
-        level_number = len(level)
-        a_node_id = int(''.join(filter(str.isdigit, selected_node_A.name.rsplit('_mut')[0])))
+
+        # if tree_a.children[0].label=='cond' and tree_b.children[0].label=='cond':
+        if tree_a.children[0].label == tree_b.children[0].label:
+            name = np.random.choice(['expr_a', 'expr_b'])
+            selected_node_A = [child for child in tree_a.children.rsplit(')')[1].rsplit('_mut')[0] if child.name == name][0]
+            selected_node_B = [child for child in tree_b.children.rsplit(')')[1].rsplit('_mut')[0] if child.name == name][0]
+        # elif tree_a.children[0].label=='expr' and tree_b.children[0].label=='expr':
+        else:
+            # scendo di livello finchè in quel livello ho due label uguali
+            while True:
+                pass
+
+        level_a = [child for child in tree_a.children if child.label=='expr']
+        # random choose a node in that level_a and retrieve its id
+        selected_node_A = np.random.choice(level_a)
+
+        level_b = [child for child in tree_b.children if child.label=='expr']
+        # random choose a node in that level_b and retrieve its id
+        selected_node_B = np.random.choice(level_b)
+
+        #---------------------------------------#
         color = '/blues9/1'
         # orange
         if selected_node_A.color.rsplit('/',1)[0]=='/oranges9':
@@ -173,31 +179,8 @@ class Population():
         selected_node_A.border=border
 
         #--------------------------------------#
-        B_levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
-                    for children in LevelOrderGroupIter(tree_b)]
-        while B_levels[-1]==[]:
-            B_levels.pop()
-        max_depth = len(B_levels)
-        # random select a level in which a node will be random selected for mutation
-        # the higher the level - the higher the probability is to be choosed
-        B_levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
-        print('PROBS= ',B_levels_prob)
-        try:
-            level = B_levels[level_number]
-        except IndexError:
-            level=None
-            while level==None:
-                try:
-                    level_number-=1
-                    level = B_levels[level_number]
-                except IndexError:
-                    level = None
-        # random choose a node in that level and retrieve its id
-        selected_node_B = np.random.choice(level)
-        while selected_node_B.label != selected_node_A.label:
-            selected_node_B = np.random.choice(level)   ###########################THERE MAYBE THERE ARE NOT IN THAT LEVEL
-
-        b_node_id = int(''.join(filter(str.isdigit, selected_node_B.name.rsplit('_mut')[0])))
+        
+        
         color = '/blues9/1'
         # orange
         if selected_node_B.color.rsplit('/',1)[0]=='/oranges9':
