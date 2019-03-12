@@ -32,6 +32,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from multiprocessing import Pool
 import multiprocessing
 #from joblib import Parallel, delayed
+import copy
 
 from Chromosome import Chromosome
 from Grammatical_Evolution_mapper import Parser
@@ -120,11 +121,13 @@ class Population():
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
         '''
-        offspring_a = parent_A.phenotype
-        offspring_b = parent_B.phenotype
+        child_A = copy.deepcopy(parent_A)
+        child_B = copy.deepcopy(parent_B)
+        tree_a = child_A.phenotype
+        tree_b = child_B.phenotype
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
         A_levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
-                    for children in LevelOrderGroupIter(offspring_a)]
+                    for children in LevelOrderGroupIter(tree_a)]
         while A_levels[-1]==[]:
             A_levels.pop()
         max_depth = len(A_levels)
@@ -134,20 +137,123 @@ class Population():
         print('PROBS= ',A_levels_prob)
         level = np.random.choice(A_levels, p=A_levels_prob)
         # random choose a node in that level and retrieve its id
-        selected_node = np.random.choice(level)
+        selected_node_A = np.random.choice(level)
         level_number = len(level)
-        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
-        if selected_node.color.rsplit('/',1)[0]=='/grays9':
-            color = selected_node.color
-        elif selected_node.color.rsplit('/',1)[0]=='/oranges9':
-            border = '/oranges9/'+selected_node.color.rsplit('/',1)[1]
+        a_node_id = int(''.join(filter(str.isdigit, selected_node_A.name.rsplit('_mut')[0])))
+        color = '/blues9/1'
+        # orange
+        if selected_node_A.color.rsplit('/',1)[0]=='/oranges9':
+            border = '/oranges9/9'
+            color = '/blues9/1'
+            # coloring all its childs the same
+            for child in selected_node_A.children:
+                child.color=color
+                child.border=border
+        # gray or blue
         else: 
-            if int(selected_node.color)<9:
-                color = str(int(selected_node.color)+1)
+            for child in selected_node_A.children:
+                if child.color.rsplit('/',1)[0]=='/oranges9':
+                    border = '/oranges9/9'
+                    color = '/blues9/1'
+                else:
+                    border = '/blues9/9'
+                    if int(child.color.rsplit('/',1)[1])<9:
+                        color = '/blues9/'+str(int(child.color.rsplit('/',1)[1])+1)
+                    else:
+                        color = '/blues9/1'
+
+                child.color=color
+                child.border=border
+            border = '/blues9/9'
+            if int(selected_node_A.color.rsplit('/',1)[1])<9:
+                color = '/blues9/'+str(int(selected_node_A.color.rsplit('/',1)[1])+1)
             else:
-                color = '1'
+                color = '/blues9/1'
+        selected_node_A.color=color
+        selected_node_A.border=border
+
+        #--------------------------------------#
+        B_levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
+                    for children in LevelOrderGroupIter(tree_b)]
+        while B_levels[-1]==[]:
+            B_levels.pop()
+        max_depth = len(B_levels)
+        # random select a level in which a node will be random selected for mutation
+        # the higher the level - the higher the probability is to be choosed
+        B_levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
+        print('PROBS= ',B_levels_prob)
+        try:
+            level = B_levels[level_number]
+        except IndexError:
+            level=None
+            while level==None:
+                try:
+                    level_number-=1
+                    level = B_levels[level_number]
+                except IndexError:
+                    level = None
+        # random choose a node in that level and retrieve its id
+        selected_node_B = np.random.choice(level)
+        while selected_node_B.label != selected_node_A.label:
+            selected_node_B = np.random.choice(level)   ###########################THERE MAYBE THERE ARE NOT IN THAT LEVEL
+
+        b_node_id = int(''.join(filter(str.isdigit, selected_node_B.name.rsplit('_mut')[0])))
+        color = '/blues9/1'
+        # orange
+        if selected_node_B.color.rsplit('/',1)[0]=='/oranges9':
+            border = '/oranges9/9'
+            color = '/blues9/1'
+            # coloring all its childs the same
+            for child in selected_node_B.children:
+                child.color=color
+                child.border=border
+        # gray or blue
+        else: 
+            for child in selected_node_B.children:
+                if child.color.rsplit('/',1)[0]=='/oranges9':
+                    border = '/oranges9/9'
+                    color = '/blues9/1'
+                else:
+                    border = '/blues9/9'
+                    if int(child.color.rsplit('/',1)[1])<9:
+                        color = '/blues9/'+str(int(child.color.rsplit('/',1)[1])+1)
+                    else:
+                        color = '/blues9/1'
+
+                child.color=color
+                child.border=border
+            border = '/blues9/9'
+            if int(selected_node_B.color.rsplit('/',1)[1])<9:
+                color = '/blues9/'+str(int(selected_node_B.color.rsplit('/',1)[1])+1)
+            else:
+                color = '/blues9/1'
+        selected_node_B.color=color
+        selected_node_B.border=border
+        #-----------------------------------------#
+        print('Crossingover... NODE', selected_node_A.name, selected_node_B.name)
+        tmp_B = selected_node_B
+        tmp_A = selected_node_A
+        # modify the list of parents' selected_node childrens
+        siblings_A = list(selected_node_A.parent.children)
+        # sobstituting it with mutated one
+        siblings_A[selected_node_A.parent.children.index(selected_node_A)] = tmp_B
+        # and reassigning it
+        selected_node_A.parent.children = tuple(siblings_A)
+        # set mutated chromosomes' phenotype as mutated root        
+        child_A.phenotype = tree_a
+
+        # modify the list of parents' selected_node childrens
+        siblings_B = list(selected_node_B.parent.children)
+        # sobstituting it with mutated one
+        siblings_B[selected_node_B.parent.children.index(selected_node_B)] = tmp_A
+        # and reassigning it
+        selected_node_B.parent.children = tuple(siblings_B)
+        # set mutated chromosomes' phenotype as mutated root  
+        child_B.phenotype = tree_b
         
-        return parent_A, parent_B
+
+        
+        return child_A, child_B
 
     def mutate(self, chromosome, p=0.05): #TODO: MODIFY BORDER='9' AS ON CROSSOVER (CREATE VAR BORDER IN IF COLOR)
         '''
@@ -173,8 +279,8 @@ class Population():
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
         level_number=len(level)
-        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
-        color = selected_node.color
+        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name.rsplit('_mut')[0])))
+        color = '/oranges9/1'
         if selected_node.color.rsplit('/',1)[0]=='/blues9':
             border = '/blues9/9'
             color = '/oranges9/1'
@@ -184,7 +290,6 @@ class Population():
                 color = '/oranges9/'+str(int(selected_node.color.rsplit('/',1)[1])+1)
             else:
                 color = '/oranges9/1'
-        print(color, ' and ', border)
         print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
             # create new rando genotype of i_gen + n_descendents lenght
