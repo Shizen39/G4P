@@ -108,17 +108,17 @@ class Parser():
                 child1 = Node('('+str(i_gene)+')cond'+self.extra_id, parent=node, label='cond', code="if ", color=self.color, border=self.border)
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child2 = Node('('+str(i_gene)+')expr_i'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
             if idx == 1:                                                                            # 1
                 child1 = Node('('+str(i_gene)+')cond'+self.extra_id, parent=node, label='cond', code="if ", color=self.color, border=self.border)
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr_a'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child2 = Node('('+str(i_gene)+')expr_i'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
-                child3 = Node('('+str(i_gene)+')expr_b'+self.extra_id, parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child3 = Node('('+str(i_gene)+')expr_e'+self.extra_id, parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child3, indent+1)
             if idx == 2:                                                                            # 2
                 child1 = Node('('+str(i_gene)+')expr_a'+self.extra_id, parent=node, label='expr', code="", indent=indent, color=self.color, border=self.border)

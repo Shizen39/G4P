@@ -59,10 +59,10 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        for i,chromosome in enumerate(population.chromosomes):
-            if population.chromosomes_fitness[i]>=population.survival_threashold:
-                chromosome.tree_to_png(generation)
-                chromosome.generate_solution(generation, to_file=True)
+        # for i,chromosome in enumerate(population.chromosomes):
+        #     if population.chromosomes_fitness[i]>=population.survival_threashold:
+        #         chromosome.tree_to_png(generation)
+        #         chromosome.generate_solution(generation, to_file=True)
 
         population.do_natural_selection()
         
@@ -71,17 +71,17 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
 
         #--------------CROSSING OVER--------------# 
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
-        offsprings = []
-        for i in range(elites_len):
-            for j in range(i+1,elites_len):
-                child1, child2 = population.crossover(
-                    population.chromosomes[ranks[i]],
-                    population.chromosomes[ranks[j]],
-                    ranks[i], ranks[j],
-                    environment.env.spec.reward_threshold 
-                )
-                offsprings.append(child1)
-                offsprings.append(child2)
+        offsprings = population.chromosomes# []
+        # for i in range(elites_len):
+        #     for j in range(i+1,elites_len):
+        #         child1, child2 = population.crossover(
+        #             population.chromosomes[ranks[i]],
+        #             population.chromosomes[ranks[j]],
+        #             ranks[i], ranks[j],
+        #             environment.env.spec.reward_threshold 
+        #         )
+        #         offsprings.append(child1)
+        #         offsprings.append(child2)
         #------------------------------#
         
         #----------------MUTATION----------------#
