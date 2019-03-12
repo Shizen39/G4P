@@ -2,3 +2,4 @@ __pycache__
 _virtualenv-gym
 .vscode
 .dist
+outputs
