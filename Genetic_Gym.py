@@ -20,7 +20,7 @@ import gym
 import time
 import multiprocessing
 
-from anytree import Node, PreOrderIter, RenderTree
+from anytree import Node, PreOrderIter, RenderTree, LevelOrderGroupIter
 from anytree.dotexport import RenderTreeGraph
 from anytree.exporter import DotExporter
 from anytree.search import find
@@ -34,6 +34,7 @@ import multiprocessing
 #from joblib import Parallel, delayed
 
 from Chromosome import Chromosome
+from Grammatical_Evolution_mapper import Parser
 
 
 
@@ -119,7 +120,7 @@ class Population():
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
         '''
-        # TODO
+        # NB: RETURN CHROMOSOMES WITH CROSSED OVER TREES!!! NOT TREE
         return parent_A, parent_B
 
     def verify_crossover(self, child1, child2, offsprings):
@@ -131,36 +132,68 @@ class Population():
                 child2 = self.mutate(child2)
         return child1, child2
 
-    def mutate(self, root, p=0.05):
+    def mutate(self, chromosome, p=0.05):
         '''
-        Mutate genes of a chromosomes
+        Mutate genes of a chromosomes.
+        retrieve tree max_depth (height?)
+        arange an array of levels of crescent probability (one prob for each level)
+        random choose a level
+        random choose a node inside that level (or rand chose an id?)
+        do above things
         '''
-        # #Retrieve max node.id walking through right childs
-        # childs_node = root.children
-        # while childs_node[-1] !=None:
-        #     childs_node = childs_node[-1].children
-        #     if childs_node[-1].is_leaf:
-        #         childs_node = childs_node[-1]
-        #         break
-        # max_id = int(''.join(filter(str.isdigit, childs_node.name)))
-        # #generate random id that will be the random picked node
-        # rand_id = np.random.randint(max_id)
-        # #list of nodes names that can be picked (only non-terminals) 
-        # #MAYBE ALSO COND???
-        # non_terminals = ['({})expr'.format(rand_id), '({})expr_a'.format(rand_id), '({})expr_b'.format(rand_id),
-        #     '({})mutexpr'.format(rand_id), '({})mutexpr_a'.format(rand_id), '({})mutexpr_b'.format(rand_id),]
+        root = chromosome.phenotype
+        # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
+        levels = [[node for node in children] for children in LevelOrderGroupIter(root)]
+        levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
+        max_depth = len(levels)
+        # random select a level in which a node will be random selected for mutation
+        # he higher the level - the higher the probability is to be choosed
+        levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
+        print('PROBS= ',levels_prob)
+        level = np.random.choice(levels, p=levels_prob)
 
-        # #find that node
-        # subgraph = find(root, lambda node: node.name in non_terminals)
-        # id_of_x = int(''.join(filter(str.isdigit, subgraph.name)))
-        # #create random subtree
-        # mutation = Node('('+str(id_of_x)+')mutexpr_b', label='expr-mutated', code="")
+        # random choose a node in that level and retrieve its id
+        selected_node = np.random.choice(level)
+        if selected_node.is_leaf:
+            selected_node = selected_node.parent.parent
+            level_number=len(level)-2
+        elif selected_node.children[0].is_leaf:
+            selected_node = selected_node.parent
+            level_number=len(level)-1
+        level_number=len(level)
+        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
+
+        print("Mutating... NODE ",selected_node.name)
+        if selected_node.label == 'expr':
+            # create new rando genotype of i_gen + n_descendents lenght
+            mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
+            # create new mutated node (root)
+            mutated = Node(selected_node.name, label='expr', code=selected_node.code)
+            # instantiate a new parser 
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            # set parser parameters to those of the selected_node and start parsing
+            parser.i_gene = mut_node_id
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
         
-        # new_children = list(subgraph.parent.children)
-        # new_children[subgraph.parent.children.index(subgraph)] = mutation
-        # subgraph.parent.children = tuple(new_children)
+        elif selected_node.label == 'cond':
+            mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
+            # create new mutated node (root)
+            mutated = Node(selected_node.name, label='cond', code=selected_node.code)
+            # instantiate a new parser 
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            # set parser parameters to those of the selected_node and start parsing
+            parser.i_gene = mut_node_id
+            mutated = parser.start_derivating('cond', tree_depth=level_number)
 
-        return root
+        # modify the list of parents' selected_node childrens
+        new_children = list(selected_node.parent.children)
+        # sobstituting it with mutated one
+        new_children[selected_node.parent.children.index(selected_node)] = mutated
+        # and reassigning it
+        selected_node.parent.children = tuple(new_children)
+        # set mutated chromosomes' phenotype as mutated root
+        chromosome.phenotype = root
+        return chromosome
 
 
 

@@ -47,7 +47,10 @@ class Parser():
     #-------FUNCTION UTILITIES--------#
     def start_derivating(self, node_type, tree_depth=0, indent=2): 
         ''' Starting derivation rule. '''
-        self.expr(self.initial_gene_seq, tree_depth, self.root, indent)
+        if node_type=='expr':
+            self.expr(self.initial_gene_seq, tree_depth, self.root, indent)
+        if node_type=='cond':
+            self.cond(self.initial_gene_seq, self.root)
         return self.root
 
     def wrap(self, gene_seq, is_terminal):
@@ -80,7 +83,6 @@ class Parser():
                 | "action =" ACTION                                                                 # 3
         '''
         self.i_gene+=1
-        print(self.i_gene)
         if self.i_gene >= len(gene_seq):                 # if translation from genes to grammrs' rules runned out of genes (self.i_gene is the index of genes)
             gene_seq = self.wrap(gene_seq, False)
             
@@ -88,38 +90,38 @@ class Parser():
             if self.method == 'full':                    # and method is FULL
                 idx = gene_seq[self.i_gene] % 3          # skip terminal ACTION so we have always tree of max_depth
             else:                                        # method is GROW
-                if node.name=='('+str(self.i_gene)+')expr_a' or node.name=='('+str(self.i_gene)+')expr_b':
+                if node.name=='('+str(self.i_gene+1)+')expr_a' or node.name=='('+str(self.i_gene+1)+')expr_b':
                     idx = gene_seq[self.i_gene] % 3 # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
                 else:
                     idx = gene_seq[self.i_gene] % 4
             i_gene = self.i_gene
             if idx == 0:                                                                            # 0
-                child1 = Node('('+str(i_gene)+')cond', parent=node, label='('+str(i_gene)+') cond', code="if ")
+                child1 = Node('('+str(i_gene)+')cond', parent=node, label='cond', code="if ")
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr', parent=node, label='('+str(i_gene)+') expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
+                child2 = Node('('+str(i_gene)+')expr', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
             if idx == 1:                                                                            # 1
-                child1 = Node('('+str(i_gene)+')cond', parent=node, label='('+str(i_gene)+') cond', code="if ")
+                child1 = Node('('+str(i_gene)+')cond', parent=node, label='cond', code="if ")
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr_a', parent=node, label='('+str(i_gene)+') expr', code=":\n{tab1}".format(tab1='\t'*(indent)))
+                child2 = Node('('+str(i_gene)+')expr_a', parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
-                child3 = Node('('+str(i_gene)+')expr_b', parent=node, label='('+str(i_gene)+') expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)))
+                child3 = Node('('+str(i_gene)+')expr_b', parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)), indent=indent)
                 self.expr(gene_seq, tree_depth+1, child3, indent+1)
             if idx == 2:                                                                            # 2
-                child1 = Node('('+str(i_gene)+')expr_a', parent=node, label='('+str(i_gene)+') expr', code="") 
+                child1 = Node('('+str(i_gene)+')expr_a', parent=node, label='expr', code="", indent=indent) 
                 self.expr(gene_seq, tree_depth+1, child1, indent)
 
-                child2 = Node('('+str(i_gene)+')expr_b', parent=node, label='('+str(i_gene)+') expr', code="\n{tab1}".format(tab1='\t'*(indent-1)))
+                child2 = Node('('+str(i_gene)+')expr_b', parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)), indent=indent)
                 self.expr(gene_seq, tree_depth+1, child2, indent)
             if idx == 3:                                                                             # 3
-                child = Node('('+str(i_gene)+')ACTION', parent=node, label='('+str(i_gene)+') ACT', code="action = ")
+                child = Node('('+str(i_gene)+')ACTION', parent=node, label='ACT', code="action = ")
                 self.ACTION(gene_seq, child)
         else:
-            child = Node('('+str(self.i_gene)+')ACTION', parent=node, label='('+str(self.i_gene)+') ACT', code="action = ")
+            child = Node('('+str(self.i_gene)+')ACTION', parent=node, label='ACT', code="action = ")
             self.ACTION(gene_seq, child)
 
 
@@ -130,16 +132,16 @@ class Parser():
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         i_gene=self.i_gene
-        child1 = Node('('+str(i_gene)+')N_STATES_obser', parent=node, label='('+str(i_gene)+') N_STATES', code="observation[")  
+        child1 = Node('('+str(i_gene)+')N_STATES_obser', parent=node, label='N_STATES', code="observation[")  
         self.N_STATES(gene_seq, child1, True)
             
-        child2 = Node('('+str(i_gene)+')COMP', parent=node, label='('+str(i_gene)+') COMP', code='] ')
+        child2 = Node('('+str(i_gene)+')COMP', parent=node, label='COMP', code='] ')
         self.COMP(gene_seq, child2)
 
-        child3 = Node('('+str(i_gene)+')N_STATES_state', parent=node, label='('+str(i_gene)+') N_STATES', code=' states[')
+        child3 = Node('('+str(i_gene)+')N_STATES_state', parent=node, label='N_STATES', code=' states[')
         self.N_STATES(gene_seq, child3, False)
         
-        child4 = Node('('+str(i_gene)+')SPT_PT', parent=node, label='('+str(i_gene)+') SPLT_PT', code='][')
+        child4 = Node('('+str(i_gene)+')SPT_PT', parent=node, label='SPLT_PT', code='][')
         self.SPLT_PT(gene_seq, child4)       
 
 
@@ -149,15 +151,14 @@ class Parser():
         COMP: "<=" | ">"            
         '''
         self.i_gene+=1
-        print(self.i_gene)
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
         idx = gene_seq[self.i_gene] % 2
         if idx == 0:
-            Node('('+str(self.i_gene)+')less', parent=node, label='('+str(self.i_gene)+') <= ', code="<=")
+            Node('('+str(self.i_gene)+')less', parent=node, label='<= ', code="<=")
         if idx == 1:
-            Node('('+str(self.i_gene)+')great', parent=node, label='('+str(self.i_gene)+') > ', code=">")
+            Node('('+str(self.i_gene)+')great', parent=node, label='> ', code=">")
 
 
     def N_STATES(self, gene_seq, node, incr):
@@ -168,7 +169,6 @@ class Parser():
         # so the two N_STATES must have the same i_seq
         if incr:        
             self.i_gene+=1
-            print(self.i_gene)
             i_gene_same= self.i_gene
         else:
             i_gene_same = self.i_gene -1
@@ -178,13 +178,13 @@ class Parser():
         
         idx = gene_seq[i_gene_same] % 4
         if idx == 0:
-            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='('+str(i_gene_same)+') 0', code="0")
+            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='0', code="0")
         if idx == 1:
-            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='('+str(i_gene_same)+') 1', code="1")
+            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='1', code="1")
         if idx == 2:
-            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='('+str(i_gene_same)+') 2', code="2")
+            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='2', code="2")
         if idx == 3:
-            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='('+str(i_gene_same)+') 3', code="3")
+            Node('('+str(i_gene_same)+node.name[-6:]+')idx', parent=node, label='3', code="3")
 
 
     def SPLT_PT(self, gene_seq, node):
@@ -192,17 +192,16 @@ class Parser():
         SPLIT_PT: /[0-2]/
         '''
         self.i_gene+=1
-        print(self.i_gene)
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
         idx = gene_seq[self.i_gene] % 3
         if idx == 0:
-            Node('('+str(self.i_gene)+')splt', parent=node, label='('+str(self.i_gene)+') 0', code="0]")
+            Node('('+str(self.i_gene)+')splt', parent=node, label='0', code="0]")
         if idx == 1:
-            Node('('+str(self.i_gene)+')splt', parent=node, label='('+str(self.i_gene)+') 1', code="1]")
+            Node('('+str(self.i_gene)+')splt', parent=node, label='1', code="1]")
         if idx == 2:
-            Node('('+str(self.i_gene)+')splt', parent=node, label='('+str(self.i_gene)+') 2', code="2]")
+            Node('('+str(self.i_gene)+')splt', parent=node, label='2', code="2]")
 
 
     def ACTION(self, gene_seq, node):
@@ -210,12 +209,11 @@ class Parser():
         ACTION: /[0-1]/
         '''
         self.i_gene+=1
-        print(self.i_gene)
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
         idx = gene_seq[self.i_gene] % 2
         if idx == 0:
-            Node('('+str(self.i_gene)+')act', parent=node, label='('+str(self.i_gene)+') 0', code="0\n")
+            Node('('+str(self.i_gene)+')act', parent=node, label='0', code="0\n")
         if idx == 1:
-            Node('('+str(self.i_gene)+')act', parent=node, label='('+str(self.i_gene)+') 1', code="1\n")
+            Node('('+str(self.i_gene)+')act', parent=node, label='1', code="1\n")

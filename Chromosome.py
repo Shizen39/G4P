@@ -16,6 +16,7 @@ from anytree.exporter import DotExporter
 from anytree.dotexport import RenderTreeGraph
 from anytree import PreOrderIter
 import numpy as np
+import os
 
 from Grammatical_Evolution_mapper import Parser
 
@@ -58,10 +59,10 @@ class Chromosome():
                 print("{}{}".format(pre, node.name)) 
         if to_png:
             RenderTreeGraph(self.phenotype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
-                node.label)).to_picture("tree_phenotype_{}.png".format(self))                              #
+                node.label)).to_picture("./outputs/{}/GEN-{}.png".format(self, 0))                              #
 
 
-    def generate_solution(self, to_file=False):
+    def generate_solution(self, generation=0, to_file=False):
         '''
         Generate solution (python program)
         The program representation of the phenotype is obtained doing PRE-ORDER starting from root node (phenotype)
@@ -78,7 +79,9 @@ class Chromosome():
         self.solution = program_chromosome
 
         if to_file:
-            file = open('program_solution_{}.py'.format(self), 'w')                                    # Create file and write in generated programs'string
+            if not os.path.exists('./outputs/{}'.format(self)):
+                os.mkdir('./outputs/{}'.format(self))
+            file = open("./outputs/{}/GEN-{}.py".format(self, generation), 'w')                                    # Create file and write in generated programs'string
             file.write(self.solution)                                                  #
             file.close()   
 
