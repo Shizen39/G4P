@@ -336,7 +336,11 @@ class Population():
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent, extra_id='_mut_'+color.rsplit('/',1)[1])
+            if selected_node.name.rsplit(')')[1].rsplit('_mut')[0] in ['expr_a', 'expr_b']:
+                indent = selected_node.indent
+            else:
+                indent = selected_node.indent+1
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=indent, extra_id='_mut_'+color.rsplit('/',1)[1])
         
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))

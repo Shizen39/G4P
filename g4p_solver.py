@@ -42,6 +42,9 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
     #------------------------------#
     
     for generation in range(n_generations):
+        for i,chromosome in enumerate(population.chromosomes):
+            chromosome.tree_to_png(generation)
+            chromosome.generate_solution(generation, to_file=True)
         #--------------EVALUATE MODELS--------------#
         population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=True)
         population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
