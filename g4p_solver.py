@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from multiprocessing import Pool
 import multiprocessing
 
-from anytree.dotexport import RenderTreeGraph
+from anytree.exporter import DotExporter
 import os, shutil
 
 from Genetic_Gym import Population, Environment
@@ -42,13 +42,6 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
     #------------------------------#
     
     for generation in range(n_generations):
-        
-        for chromosome in population.chromosomes:
-            if not os.path.exists('./outputs/{}'.format(chromosome)):
-                os.mkdir('./outputs/{}'.format(chromosome))
-            RenderTreeGraph(chromosome.phenotype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
-                node.label)).to_picture("./outputs/{}/GEN-{}.png".format(chromosome, generation))
-            chromosome.generate_solution(generation, to_file=True)
         #--------------EVALUATE MODELS--------------#
         population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=True)
         population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
@@ -65,6 +58,11 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
 
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
+
+        for i,chromosome in enumerate(population.chromosomes):
+            if population.chromosomes_fitness[i]>=population.survival_threashold:
+                chromosome.tree_to_png(generation)
+                chromosome.generate_solution(generation, to_file=True)
 
         population.do_natural_selection()
         
@@ -132,8 +130,8 @@ if __name__ == '__main__':
     env, all_results = evolve(
         population, 
         environment, 
-        initial_n_chr = 10, 
-        n_generations = 5,
+        initial_n_chr = 50, 
+        n_generations = 10,
         seed          = sid
     )#123456 #2400846564
     # env, best_policy, all_results = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669

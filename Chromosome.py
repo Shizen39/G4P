@@ -50,16 +50,15 @@ class Chromosome():
             to_png (boolean): export tree on png file
             to_shell (boolean): print tree on shell
         '''
-        root = Node('('+str(0)+')expr-start', label='(-1) expr', code='')                      # root of derivation tree
-        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
+        root = Node('('+str(0)+')expr-start', label='expr', code='', color='1',colorscheme='greys9')                     # root of derivation tree
+        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP, color='1',colorscheme='greys9')
         
         self.phenotype = parser.start_derivating('expr')
         if to_shell:
             for pre, _, node in RenderTree(self.phenotype):                                # print tree on terminal
                 print("{}{}".format(pre, node.name)) 
         if to_png:
-            RenderTreeGraph(self.phenotype, nodeattrfunc=lambda node: 'label="{}"'.format( # export tree .png file
-                node.label)).to_picture("./outputs/{}/GEN-{}.png".format(self, 0))                              #
+            self.tree_to_png(generation=0)
 
 
     def generate_solution(self, generation=0, to_file=False):
@@ -104,3 +103,11 @@ class Chromosome():
             action= np.random.randint(0,2) #there (action_space.n)
         
         return action
+    
+    def tree_to_png(self, generation):
+        if not os.path.exists('./outputs/{}'.format(self)):
+            os.mkdir('./outputs/{}'.format(self))
+        DotExporter(self.phenotype, 
+            nodeattrfunc=lambda node: 'label="{}", style=filled, colorscheme={}, color=9, fillcolor={}'.format(node.label, node.colorscheme, node.color),
+            edgeattrfunc=lambda node,child: 'colorscheme={}, color=9'.format(node.colorscheme)
+            ).to_picture("./outputs/{}/GEN-{}.png".format(self, generation))

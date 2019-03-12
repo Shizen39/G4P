@@ -162,15 +162,15 @@ class Population():
             level_number=len(level)-1
         level_number=len(level)
         mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
-
+        color = selected_node.color if selected_node.colorscheme=='grays9' else str(int(selected_node.color)+1) if int(selected_node.color)<9 else '1'
         print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name, label='expr', code=selected_node.code)
+            mutated = Node(selected_node.name, label='expr', code=selected_node.code, color=color, colorscheme='oranges9')
             # instantiate a new parser 
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id
             mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
@@ -178,9 +178,9 @@ class Population():
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name, label='cond', code=selected_node.code)
+            mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, colorscheme='oranges9')
             # instantiate a new parser 
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth, color=color, colorscheme='oranges9')
             # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id
             mutated = parser.start_derivating('cond', tree_depth=level_number)
