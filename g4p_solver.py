@@ -71,16 +71,17 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
 
         #--------------CROSSING OVER--------------# 
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
-        offsprings = population.chromosomes#[]
-        # for i in range(elites_len):
-        #     for j in range(i+1,elites_len):
-        #         child1, child2 = population.crossover(
-        #             population.chromosomes[ranks[i]],
-        #             population.chromosomes[ranks[j]]
-        #         )
-        #         #child1, child2 = population.verify_crossover(child1, child2, offsprings)
-        #         offsprings.append(child1)
-        #         offsprings.append(child2)
+        offsprings = []
+        for i in range(elites_len):
+            for j in range(i+1,elites_len):
+                child1, child2 = population.crossover(
+                    population.chromosomes[ranks[i]],
+                    population.chromosomes[ranks[j]],
+                    ranks[i], ranks[j],
+                    environment.env.spec.reward_threshold 
+                )
+                offsprings.append(child1)
+                offsprings.append(child2)
         #------------------------------#
         
         #----------------MUTATION----------------#

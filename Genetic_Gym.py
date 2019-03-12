@@ -113,24 +113,27 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
 
-    def crossover(self, parent_A, parent_B):
+    def crossover(self, parent_A, parent_B, a, b, reward_threshold):
         '''  
         Produce offsprings combining random parts of two chromosomes and generating two offsprings
         parent1, parent2
         child1 = parent1 + swap_random_subtree(parent2)
         child2 = parent2 + swap_random_subtree(parent1)
         '''
+        offspring_a = parent_A.phenotype
+        offspring_b = parent_B.phenotype
+
+        A_levels = [[node for node in children] for children in LevelOrderGroupIter(offspring_a)]
+        A_levels.pop()  # remove leaves nodes beacouse their cases are included in 'cond'
+        max_depth = len(A_levels)
+        # random select a level in which a node will be random selected for mutation
+        # he higher the level - the higher the probability is to be choosed
+        A_levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
+        print('PROBS= ',A_levels_prob)
+        level = np.random.choice(A_levels, p=A_levels_prob)
+        
         # NB: RETURN CHROMOSOMES WITH CROSSED OVER TREES!!! NOT TREE
         return parent_A, parent_B
-
-    def verify_crossover(self, child1, child2, offsprings):
-        if child1 in offsprings:
-            while child1 in offsprings:
-                child1 = self.mutate(child1)
-        if child2 in offsprings:
-            while child2 in offsprings:
-                child2 = self.mutate(child2)
-        return child1, child2
 
     def mutate(self, chromosome, p=0.05):
         '''
@@ -154,12 +157,12 @@ class Population():
 
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
-        if selected_node.is_leaf:
+        if selected_node.is_leaf:   # if is a leaf (because the tree was GROW), go to <cond> node
             selected_node = selected_node.parent.parent
             level_number=len(level)-2
-        elif selected_node.children[0].is_leaf:
-            selected_node = selected_node.parent
-            level_number=len(level)-1
+        elif selected_node.children[0].is_leaf: # if its childrens are leaves, go to <expr>
+            selected_node = selected_node.parent.parent
+            level_number=len(level)-2
         level_number=len(level)
         mut_node_id = int(''.join(filter(str.isdigit, selected_node.name)))
         color = selected_node.color if selected_node.colorscheme=='grays9' else str(int(selected_node.color)+1) if int(selected_node.color)<9 else '1'
