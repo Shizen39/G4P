@@ -114,7 +114,7 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
 
-    def crossover(self, parent_A, parent_B, a, b, reward_threshold): #TODO: PASS BORDER ON START_DER
+    def crossover(self, parent_A, parent_B, generation):
         '''  
         Produce offsprings combining random parts of two chromosomes and generating two offsprings
         parent1, parent2
@@ -125,10 +125,9 @@ class Population():
         child_B = copy.deepcopy(parent_B)
         tree_a = copy.deepcopy(parent_A.phenotype)
         tree_b = copy.deepcopy(parent_B.phenotype)
-
         
         if tree_a.children[0].label == tree_b.children[0].label:
-            # if both nodes tree have the same first label (both or cond or expr)
+            # if both nodes tree have the same first label (both are or cond or expr)
             # choose random node from first expr or second
             if tree_a.children[0].label == 'cond':
                 name = np.random.choice(['expr_i', 'expr_e'])
@@ -136,132 +135,47 @@ class Population():
                 name = np.random.choice(['expr_a', 'expr_b'])
             selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_mut')[0] == name][0]
             selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_mut')[0] == name][0]
-        # elif tree_a.children[0].label=='expr' and tree_b.children[0].label=='expr':
         else:
-            # else one tree is cond-expr_a-expr_b and the other expr_a-expr_ (they have different code!)
+            # else one tree is cond-expr_i-expr_e and the other expr_a-expr_b (they have different code!)
+            # go down through levels until two nodes with the same label are founded
+            levels_A = [[node for node in children if node.label=='expr'] for children in LevelOrderGroupIter(tree_a)]
+            levels_B = [[node for node in children if node.label=='expr'] for children in LevelOrderGroupIter(tree_b)]
+            # remove each couple of levels in wich one of them is [] (useless to hold them, the nodes compare will never be true)
+            leng = len(levels_A) if len(levels_A)<=len(levels_B) else len(levels_B)
+            for i in range(leng -1,-1,-1):
+                if levels_A[i] == [] or levels_B[i]==[]:
+                    levels_A.remove(levels_A[i])
+                    levels_B.remove(levels_B[i])
+            lvl= 1 # level iterator
+            selected_node_B=[]
+            while lvl<len(levels_A) and lvl<len(levels_B):
+                compatible_couples = [] # list of nodes couple with the same name
+                for node_a in levels_A[lvl]:
+                    for node_b in levels_B[lvl]:
+                        if node_a.name.rsplit(')')[1].rsplit('_mut')[0] == node_b.name.rsplit(')')[1].rsplit('_mut')[0]:
+                            compatible_couples.append([node_a, node_b])
+                if compatible_couples != []:
+                    break
+                else:
+                    lvl+=1
+            if compatible_couples != []:
+                # random select a couple of nodes from all set of compatiple nodes of the same level
+                selected_node_A, selected_node_B = compatible_couples[np.random.choice(len(compatible_couples))]
+                # the two nodes have different indents, beacouse they have inherit it from their - different - parents
+                if selected_node_A.indent > selected_node_B.indent:
+                    # decrement each indents of node_A family by 1 and increment those of node_B
+                    self.fix_indents(selected_node_A, selected_node_B)
+                elif selected_node_A.indent < selected_node_B.indent:
+                    # increment each indents of node_A family by 1 and decrement those of node_B
+                    self.fix_indents(selected_node_B, selected_node_A)
+            else:
+                return parent_A, parent_B
             
-            # scendo di livello finchè in quel livello ho due label uguali
-            # levels_A = []
-            # for children in LevelOrderGroupIter(tree_a):
-            #     level = [node for node in children if node.label=='expr'or node.label=='cond']
-            #     if level!=[]:
-            #         levels_A.append(level)
-            # levels_B = []
-            # for children in LevelOrderGroupIter(tree_b):
-            #     level = [node for node in children if node.label=='expr'or node.label=='cond']
-            #     if level!=[]:
-            #         levels_B.append(level)
-            
-            # lvl=2 # skip first two layers
-            # selected_node_B=[]
-            # while lvl<len(levels_A) and lvl<len(levels_B):
-            #     print(lvl)
-            #     selected_node_A = np.random.choice(levels_A[lvl])
-            #     if selected_node_A.label=='cond':
-            #         selected_node_A = selected_node_A.parent.children[1] if len(selected_node_A.parent.children)==2 else selected_node_A.parent.children[np.random.randint(1,3)]# expr_i or expr_e
-            #         levels_B[lvl] = [node for node in levels_B[lvl] if node.label == 'cond'] # reduce to cond only
-            #         levels_B[lvl] = [node for node in levels_B[lvl] if node.name.rsplit(')')[1].rsplit('_mut')[0] == selected_node_A.name.rsplit(')')[1].rsplit('_mut')[0]] # reduce to expr_i or expr_e only
-            #         if levels_B[lvl] == []:
-            #             lvl+=1
-            #             continue
-            #         selected_node_B = np.random.choice(levels_B[lvl])
-            #         break
-
-            #     else: #==expr
-            #         if selected_node_A.name.rsplit(')')[1].rsplit('_mut')[0] in ['expr_i', 'expr_e']:
-            #             levels_B[lvl] = [node for node in levels_B[lvl] if node.label == 'cond'] # reduce to cond only
-            #             levels_B[lvl] = [node for node in levels_B[lvl] if node.name.rsplit(')')[1].rsplit('_mut')[0] == selected_node_A.name.rsplit(')')[1].rsplit('_mut')[0]] # reduce to expr_i or expr_e only
-            #             if levels_B[lvl] == []:
-            #                 lvl+=1
-            #                 continue
-            #             selected_node_B = np.random.choice(levels_B[lvl])
-            #             break
-
-            #         else:
-            #             levels_B[lvl] = [node for node in levels_B[lvl] if node.label == 'expr'] # reduce to expr only
-            #             levels_B[lvl] = [node for node in levels_B[lvl] if node.name.rsplit(')')[1].rsplit('_mut')[0] == selected_node_A.name.rsplit(')')[1].rsplit('_mut')[0]] # reduce to expr_a or expr_b only
-            #             if levels_B[lvl] == []:
-            #                 lvl+=1
-            #                 continue
-            #             selected_node_B = np.random.choice(levels_B[lvl])
-            #             break
-
-        # if selected_node_B == []:
-            return parent_A, parent_B
-
-
-        
-
         #---------------------------------------#
-        color = '/blues9/1'
-        # orange
-        if selected_node_A.color.rsplit('/',1)[0]=='/oranges9':
-            border = '/oranges9/9'
-            color = '/blues9/1'
-            # coloring all its childs the same
-            for child in PreOrderIter(selected_node_A):
-                child.color=color
-                child.border=border
-        # gray or blue
-        else: 
-            for child in PreOrderIter(selected_node_A):
-                if child.color.rsplit('/',1)[0]=='/oranges9':
-                    border = '/oranges9/9'
-                    color = '/blues9/1'
-                else:
-                    border = '/blues9/9'
-                    if int(child.color.rsplit('/',1)[1])<9:
-                        color = '/blues9/'+str(int(child.color.rsplit('/',1)[1])+1)
-                    else:
-                        color = '/blues9/1'
-
-                child.color=color
-                child.border=border
-            border = '/blues9/9'
-            if int(selected_node_A.color.rsplit('/',1)[1])<9:
-                color = '/blues9/'+str(int(selected_node_A.color.rsplit('/',1)[1])+1)
-            else:
-                color = '/blues9/1'
-        selected_node_A.color=color
-        selected_node_A.border=border
-
-        #--------------------------------------#
-        
-        
-        color = '/blues9/1'
-        # orange
-        if selected_node_B.color.rsplit('/',1)[0]=='/oranges9':
-            border = '/oranges9/9'
-            color = '/blues9/1'
-            # coloring all its childs the same
-            for child in selected_node_B.children:
-                child.color=color
-                child.border=border
-        # gray or blue
-        else: 
-            for child in selected_node_B.children:
-                if child.color.rsplit('/',1)[0]=='/oranges9':
-                    border = '/oranges9/9'
-                    color = '/blues9/1'
-                else:
-                    border = '/blues9/9'
-                    if int(child.color.rsplit('/',1)[1])<9:
-                        color = '/blues9/'+str(int(child.color.rsplit('/',1)[1])+1)
-                    else:
-                        color = '/blues9/1'
-
-                child.color=color
-                child.border=border
-            border = '/blues9/9'
-            if int(selected_node_B.color.rsplit('/',1)[1])<9:
-                color = '/blues9/'+str(int(selected_node_B.color.rsplit('/',1)[1])+1)
-            else:
-                color = '/blues9/1'
-        selected_node_B.color=color
-        selected_node_B.border=border
+        self.colorize(selected_node_A)
+        self.colorize(selected_node_B)
         #-----------------------------------------#
-        print('Crossingover... NODE', selected_node_A.name, selected_node_B.name)
-        
+        #print('Crossingover... NODE', selected_node_A.name, selected_node_B.name)
         tmp_B = copy.deepcopy(selected_node_B)
         tmp_B.parent=None
         tmp_A = copy.deepcopy(selected_node_A)
@@ -275,7 +189,6 @@ class Population():
         # set mutated chromosomes' phenotype as mutated root        
         child_A.phenotype = tree_a
         #-----------
-        #selected_node_B.parent = tree_b
         # modify the list of parents' selected_node childrens
         siblings_B = list(selected_node_B.parent.children)
         # sobstituting it with mutated one
@@ -285,13 +198,9 @@ class Population():
         selected_node_B.parent.children = tuple(siblings_B)
         # set mutated chromosomes' phenotype as mutated root  
         child_B.phenotype = tree_b
-
-        child_A.tree_to_png(0)
-        child_B.generate_solution(0, to_file=True)
-        child_B.tree_to_png(0)
-        child_A.generate_solution(0, to_file=True)
         
-
+        child_A.tree_to_png(generation)
+        child_B.tree_to_png(generation)
         
         return child_A, child_B
 
@@ -320,17 +229,16 @@ class Population():
         selected_node = np.random.choice(level)
         level_number=len(level)
         mut_node_id = int(''.join(filter(str.isdigit, selected_node.name.rsplit('_mut')[0])))
-        color = '/oranges9/1'
+        color = '/oranges9/2'
         if selected_node.color.rsplit('/',1)[0]=='/blues9':
             border = '/blues9/9'
-            color = '/oranges9/1'
         else: 
             border = '/oranges9/9'
             if int(selected_node.color.rsplit('/',1)[1])<9:
                 color = '/oranges9/'+str(int(selected_node.color.rsplit('/',1)[1])+1)
             else:
-                color = '/oranges9/1'
-        print("Mutating... NODE ",selected_node.name)
+                color = '/oranges9/2'
+        #print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
@@ -367,7 +275,50 @@ class Population():
         return chromosome
 
 
+    def fix_indents(self, selected_node_A, selected_node_B):
+        for node in PreOrderIter(selected_node_A): #-\t
+            if node.name.rsplit(')')[1].rsplit('_mut')[0] == 'expr_e':
+                node.indent-=1
+                node.code = ('else:\n').join(node.code.split('\telse:\n\t'))
+            elif node.label=='expr':
+                node.indent-=1
+                if node.code!='':
+                    node.code = node.code[:-1]
 
+        for node in PreOrderIter(selected_node_B): #+\t
+            if node.name.rsplit(')')[1].rsplit('_mut')[0] == 'expr_e':
+                node.indent+=1
+                node.code=('\telse:\n\t').join(node.code.split('else:\n'))
+            elif node.label=='expr':
+                node.indent+=1
+                if node.code!='':
+                    node.code += '\t'
+        #return selected_node_A, selected_node_B
+
+    def colorize(self, node):
+        color = '/blues9/2'
+        # orange
+        if node.color.rsplit('/',1)[0]=='/oranges9':
+            border = '/oranges9/9'
+            # coloring all its childs the same
+            for child in PreOrderIter(node):
+                child.color=color
+                child.border=border
+        # gray or blue
+        else: 
+            for child in PreOrderIter(node):
+                if child.color.rsplit('/',1)[0]=='/oranges9':
+                    border = '/oranges9/9'
+                    color = '/blues9/2'
+                else:
+                    border = '/blues9/9'
+                    if int(child.color.rsplit('/',1)[1])<9:
+                        color = '/blues9/'+str(int(child.color.rsplit('/',1)[1])+1)
+                    else:
+                        color = '/blues9/2'
+                child.color=color
+                child.border=border
+        #return node
 
 class Environment():
     '''

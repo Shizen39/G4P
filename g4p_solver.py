@@ -77,8 +77,7 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
                 child1, child2 = population.crossover(
                     population.chromosomes[ranks[i]],
                     population.chromosomes[ranks[j]],
-                    ranks[i], ranks[j],
-                    environment.env.spec.reward_threshold 
+                    generation
                 )
                 offsprings.append(child1)
                 offsprings.append(child2)
