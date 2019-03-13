@@ -123,12 +123,11 @@ class Population():
         '''
         child_A = copy.deepcopy(parent_A)
         child_B = copy.deepcopy(parent_B)
-        tree_a = child_A.phenotype
-        tree_b = child_B.phenotype
+        tree_a = copy.deepcopy(parent_A.phenotype)
+        tree_b = copy.deepcopy(parent_B.phenotype)
 
         
         if tree_a.children[0].label == tree_b.children[0].label:
-            print([b.label for b in tree_a.children],'\n',[b.label for b in tree_b.children])
             # if both nodes tree have the same first label (both or cond or expr)
             # choose random node from first expr or second
             if tree_a.children[0].label == 'cond':
@@ -262,22 +261,27 @@ class Population():
         selected_node_B.border=border
         #-----------------------------------------#
         print('Crossingover... NODE', selected_node_A.name, selected_node_B.name)
-        tmp_B = selected_node_B
-        tmp_A = selected_node_A
+        
+        tmp_B = copy.deepcopy(selected_node_B)
+        tmp_B.parent=None
+        tmp_A = copy.deepcopy(selected_node_A)
         # modify the list of parents' selected_node childrens
         siblings_A = list(selected_node_A.parent.children)
         # sobstituting it with mutated one
         siblings_A[selected_node_A.parent.children.index(selected_node_A)] = tmp_B
+        
         # and reassigning it
         selected_node_A.parent.children = tuple(siblings_A)
         # set mutated chromosomes' phenotype as mutated root        
         child_A.phenotype = tree_a
-
+        #-----------
+        #selected_node_B.parent = tree_b
         # modify the list of parents' selected_node childrens
         siblings_B = list(selected_node_B.parent.children)
         # sobstituting it with mutated one
         siblings_B[selected_node_B.parent.children.index(selected_node_B)] = tmp_A
         # and reassigning it
+        tmp_A.parent = selected_node_B.parent
         selected_node_B.parent.children = tuple(siblings_B)
         # set mutated chromosomes' phenotype as mutated root  
         child_B.phenotype = tree_b

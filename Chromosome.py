@@ -78,9 +78,9 @@ class Chromosome():
         self.solution = program_chromosome
 
         if to_file:
-            if not os.path.exists('./outputs/{}'.format(self)):
-                os.mkdir('./outputs/{}'.format(self))
-            file = open("./outputs/{}/GEN-{}.py".format(self, generation), 'w')                                    # Create file and write in generated programs'string
+            if not os.path.exists('./outputs/GEN-{}'.format(generation)):
+                os.mkdir('./outputs/GEN-{}'.format(generation))
+            file = open("./outputs/GEN-{}/{}.py".format(generation, str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]), 'w')                                    # Create file and write in generated programs'string
             file.write(self.solution)                                                  #
             file.close()   
 
@@ -95,7 +95,11 @@ class Chromosome():
         Returns: an action
         '''
         loc={}
-        exec(self.solution, {}, loc)
+        try:
+            exec(self.solution, {}, loc)
+        except SyntaxError as e:
+            print(self)
+            exit(e)
         try:
             action=loc['get_action'](observation, states)
         except UnboundLocalError:   #observation did not pass through any if else
@@ -105,9 +109,9 @@ class Chromosome():
         return action
     
     def tree_to_png(self, generation):
-        if not os.path.exists('./outputs/{}'.format(self)):
-            os.mkdir('./outputs/{}'.format(self))
+        if not os.path.exists('./outputs/GEN-{}'.format(generation)):
+            os.mkdir('./outputs//GEN-{}'.format(generation))
         DotExporter(self.phenotype, 
             nodeattrfunc=lambda node: 'label="{}", style=filled, color="{}", fillcolor="{}"'.format(node.label, node.border, node.color),
             edgeattrfunc=lambda node,child: 'color="{}"'.format(node.border)
-            ).to_picture("./outputs/{}/GEN-{}.png".format(self, generation))
+            ).to_picture("./outputs/GEN-{}/{}.png".format(generation, str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]))

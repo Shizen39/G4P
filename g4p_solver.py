@@ -42,9 +42,6 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
     #------------------------------#
     
     for generation in range(n_generations):
-        for i,chromosome in enumerate(population.chromosomes):
-            chromosome.tree_to_png(generation)
-            chromosome.generate_solution(generation, to_file=True)
         #--------------EVALUATE MODELS--------------#
         population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=True)
         population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
@@ -74,17 +71,17 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
 
         #--------------CROSSING OVER--------------# 
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
-        offsprings = population.chromosomes# []
-        # for i in range(elites_len):
-        #     for j in range(i+1,elites_len):
-        #         child1, child2 = population.crossover(
-        #             population.chromosomes[ranks[i]],
-        #             population.chromosomes[ranks[j]],
-        #             ranks[i], ranks[j],
-        #             environment.env.spec.reward_threshold 
-        #         )
-        #         offsprings.append(child1)
-        #         offsprings.append(child2)
+        offsprings = []
+        for i in range(elites_len):
+            for j in range(i+1,elites_len):
+                child1, child2 = population.crossover(
+                    population.chromosomes[ranks[i]],
+                    population.chromosomes[ranks[j]],
+                    ranks[i], ranks[j],
+                    environment.env.spec.reward_threshold 
+                )
+                offsprings.append(child1)
+                offsprings.append(child2)
         #------------------------------#
         
         #----------------MUTATION----------------#
