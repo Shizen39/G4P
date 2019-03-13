@@ -99,38 +99,38 @@ class Parser():
             if self.method == 'full':                    # and method is FULL
                 idx = gene_seq[self.i_gene] % 3          # skip terminal ACTION so we have always tree of max_depth
             else:                                        # method is GROW
-                if node.name.rsplit('_mut')[0]=='('+str(self.i_gene+1)+')expr_a' or node.name.rsplit('_mut')[0]=='('+str(self.i_gene+1)+')expr_b':
+                if node.name.rsplit('_id')[0]=='('+str(self.i_gene+1)+')expr_a' or node.name.rsplit('_id')[0]=='('+str(self.i_gene+1)+')expr_b':
                     idx = gene_seq[self.i_gene] % 3 # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
                 else:
                     idx = gene_seq[self.i_gene] % 4
             i_gene = self.i_gene
             if idx == 0:                                                                            # 0
-                child1 = Node('('+str(i_gene)+')cond'+self.extra_id, parent=node, label='cond', code="if ", color=self.color, border=self.border)
+                child1 = Node('('+str(i_gene)+')cond'+'_id_'+str(id(node)), parent=node, label='cond', code="if ", color=self.color, border=self.border)
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr_i'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child2 = Node('('+str(i_gene)+')expr_i'+'_id_'+str(id(node)), parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
             if idx == 1:                                                                            # 1
-                child1 = Node('('+str(i_gene)+')cond'+self.extra_id, parent=node, label='cond', code="if ", color=self.color, border=self.border)
+                child1 = Node('('+str(i_gene)+')cond'+'_id_'+str(id(node)), parent=node, label='cond', code="if ", color=self.color, border=self.border)
                 self.cond(gene_seq, child1)
                 
-                child2 = Node('('+str(i_gene)+')expr_i'+self.extra_id, parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child2 = Node('('+str(i_gene)+')expr_i'+'_id_'+str(id(node)), parent=node, label='expr', code=":\n{tab1}".format(tab1='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child2, indent+1)
 
-                child3 = Node('('+str(i_gene)+')expr_e'+self.extra_id, parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)), indent=indent, color=self.color, border=self.border)
+                child3 = Node('('+str(i_gene)+')expr_e'+'_id_'+str(id(node)), parent=node, label='expr', code="\n{tab2}else:\n{tab3}".format(tab2='\t'*(indent-1), tab3='\t'*(indent)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child3, indent+1)
             if idx == 2:                                                                            # 2
-                child1 = Node('('+str(i_gene)+')expr_a'+self.extra_id, parent=node, label='expr', code="", indent=indent, color=self.color, border=self.border)
+                child1 = Node('('+str(i_gene)+')expr_a'+'_id_'+str(id(node)), parent=node, label='expr', code="", indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child1, indent)
 
-                child2 = Node('('+str(i_gene)+')expr_b'+self.extra_id, parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)), indent=indent, color=self.color, border=self.border)
+                child2 = Node('('+str(i_gene)+')expr_b'+'_id_'+str(id(node)), parent=node, label='expr', code="\n{tab1}".format(tab1='\t'*(indent-1)), indent=indent, color=self.color, border=self.border)
                 self.expr(gene_seq, tree_depth+1, child2, indent)
             if idx == 3:                                                                             # 3
-                child = Node('('+str(i_gene)+')ACTION'+self.extra_id, parent=node, label='ACT', code="action = ", color=self.color, border=self.border)
+                child = Node('('+str(i_gene)+')ACTION'+'_id_'+str(id(node)), parent=node, label='ACT', code="action = ", color=self.color, border=self.border)
                 self.ACTION(gene_seq, child)
         else:
-            child = Node('('+str(self.i_gene)+')ACTION'+self.extra_id, parent=node, label='ACT', code="action = ", color=self.color, border=self.border)
+            child = Node('('+str(self.i_gene)+')ACTION'+'_id_'+str(id(node)), parent=node, label='ACT', code="action = ", color=self.color, border=self.border)
             self.ACTION(gene_seq, child)
 
 
@@ -141,16 +141,16 @@ class Parser():
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         i_gene=self.i_gene
-        child1 = Node('('+str(i_gene)+')N_STATES_obser'+self.extra_id, parent=node, label='N_STATES', code="observation[", color=self.color, border=self.border)
+        child1 = Node('('+str(i_gene)+')N_STATES_obser'+'_id_'+str(id(node)), parent=node, label='N_STATES', code="observation[", color=self.color, border=self.border)
         self.N_STATES(gene_seq, child1, True, '_obser')
             
-        child2 = Node('('+str(i_gene)+')COMP'+self.extra_id, parent=node, label='COMP', code='] ', color=self.color, border=self.border)
+        child2 = Node('('+str(i_gene)+')COMP'+'_id_'+str(id(node)), parent=node, label='COMP', code='] ', color=self.color, border=self.border)
         self.COMP(gene_seq, child2)
 
-        child3 = Node('('+str(i_gene)+')N_STATES_state'+self.extra_id, parent=node, label='N_STATES', code=' states[', color=self.color, border=self.border)
+        child3 = Node('('+str(i_gene)+')N_STATES_state'+'_id_'+str(id(node)), parent=node, label='N_STATES', code=' states[', color=self.color, border=self.border)
         self.N_STATES(gene_seq, child3, False, '_state')
         
-        child4 = Node('('+str(i_gene)+')SPT_PT'+self.extra_id, parent=node, label='SPLT_PT', code='][', color=self.color, border=self.border)
+        child4 = Node('('+str(i_gene)+')SPT_PT'+'_id_'+str(id(node)), parent=node, label='SPLT_PT', code='][', color=self.color, border=self.border)
         self.SPLT_PT(gene_seq, child4)       
 
 
@@ -165,9 +165,9 @@ class Parser():
         
         idx = gene_seq[self.i_gene] % 2
         if idx == 0:
-            Node('('+str(self.i_gene)+')less'+self.extra_id, parent=node, label='<= ', code="<=", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')less'+'_id_'+str(id(node)), parent=node, label='<= ', code="<=", color=self.color, border=self.border)
         if idx == 1:
-            Node('('+str(self.i_gene)+')great'+self.extra_id, parent=node, label='> ', code=">", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')great'+'_id_'+str(id(node)), parent=node, label='> ', code=">", color=self.color, border=self.border)
 
 
     def N_STATES(self, gene_seq, node, incr, arr):
@@ -187,13 +187,13 @@ class Parser():
         
         idx = gene_seq[i_gene_same] % 4
         if idx == 0:
-            Node('('+str(i_gene_same)+arr+')idx'+self.extra_id, parent=node, label='0', code="0", color=self.color, border=self.border)
+            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='0', code="0", color=self.color, border=self.border)
         if idx == 1:
-            Node('('+str(i_gene_same)+arr+')idx'+self.extra_id, parent=node, label='1', code="1", color=self.color, border=self.border)
+            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='1', code="1", color=self.color, border=self.border)
         if idx == 2:
-            Node('('+str(i_gene_same)+arr+')idx'+self.extra_id, parent=node, label='2', code="2", color=self.color, border=self.border)
+            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='2', code="2", color=self.color, border=self.border)
         if idx == 3:
-            Node('('+str(i_gene_same)+arr+')idx'+self.extra_id, parent=node, label='3', code="3", color=self.color, border=self.border)
+            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='3', code="3", color=self.color, border=self.border)
 
 
     def SPLT_PT(self, gene_seq, node):
@@ -206,11 +206,11 @@ class Parser():
         
         idx = gene_seq[self.i_gene] % 3
         if idx == 0:
-            Node('('+str(self.i_gene)+')splt'+self.extra_id, parent=node, label='0', code="0]", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='0', code="0]", color=self.color, border=self.border)
         if idx == 1:
-            Node('('+str(self.i_gene)+')splt'+self.extra_id, parent=node, label='1', code="1]", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='1', code="1]", color=self.color, border=self.border)
         if idx == 2:
-            Node('('+str(self.i_gene)+')splt'+self.extra_id, parent=node, label='2', code="2]", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='2', code="2]", color=self.color, border=self.border)
 
 
     def ACTION(self, gene_seq, node):
@@ -223,6 +223,6 @@ class Parser():
         
         idx = gene_seq[self.i_gene] % 2
         if idx == 0:
-            Node('('+str(self.i_gene)+')act'+self.extra_id, parent=node, label='0', code="0\n", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')act'+'_id_'+str(id(node)), parent=node, label='0', code="0\n", color=self.color, border=self.border)
         if idx == 1:
-            Node('('+str(self.i_gene)+')act'+self.extra_id, parent=node, label='1', code="1\n", color=self.color, border=self.border)
+            Node('('+str(self.i_gene)+')act'+'_id_'+str(id(node)), parent=node, label='1', code="1\n", color=self.color, border=self.border)

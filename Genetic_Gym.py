@@ -43,7 +43,8 @@ class Population():
     '''
     This class represent a set of chromosomes that runs on a generation.
     Args:
-        mutation_prob (float): probability of a single gene of a chromosome to mutate to a random gene
+        mutation_prob (float): probability of a chromosome to be mutated or not
+        crossover_prob (float): probability of crossover between two chromosome to be done or not
         max_elite (int): maximum number of chromosome that will survive after their evaluation (elites)
 
     Attributes:
@@ -53,9 +54,10 @@ class Population():
         survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
         best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
     '''
-    def __init__(self, mutation_prob, max_elite):
+    def __init__(self, mutation_prob, crossover_prob, max_elite):
         # Inizialization parameters
         self.mutation_prob = mutation_prob
+        self.crossover_prob = crossover_prob
         self.max_elite = max_elite
         # Population attribbutes
         self.chromosomes         = []
@@ -114,30 +116,39 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
 
-    def crossover(self, parent_A, parent_B, generation):
+    def crossover(self, parent_A, parent_B):
         '''  
-        Produce offsprings combining random parts of two chromosomes and generating two offsprings
-        parent1, parent2
-        child1 = parent1 + swap_random_subtree(parent2)
-        child2 = parent2 + swap_random_subtree(parent1)
+        Produce offsprings switching two random subgraph selected in the two parents trees and 
+        generating two different offsprings.
+        NOTE: There must exists -on the same level- at least two nodes on the two parents tree with equal name (not only label!)
+        so they share the same python code structure. A search if performed if they're not finded in the first level.
+        If they don't exists, original parents are returned.
+        
+        Args:
+            parent_A (Chromosome)
+            parent_B (Chromosome)
+        Returns:
+            child_1, child2
         '''
+        if np.random.uniform() > self.crossover_prob:
+            return parent_A, parent_B
         child_A = copy.deepcopy(parent_A)
         child_B = copy.deepcopy(parent_B)
         tree_a = copy.deepcopy(parent_A.phenotype)
         tree_b = copy.deepcopy(parent_B.phenotype)
         
         if tree_a.children[0].label == tree_b.children[0].label:
-            # if both nodes tree have the same first label (both are or cond or expr)
+            # if both first nodes tree have the same label (both are or cond or expr)
             # choose random node from first expr or second
             if tree_a.children[0].label == 'cond':
                 name = np.random.choice(['expr_i', 'expr_e'])
             else:
                 name = np.random.choice(['expr_a', 'expr_b'])
-            selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_mut')[0] == name][0]
-            selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_mut')[0] == name][0]
+            selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
+            selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
         else:
             # else one tree is cond-expr_i-expr_e and the other expr_a-expr_b (they have different code!)
-            # go down through levels until two nodes with the same label are founded
+            # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
             levels_A = [[node for node in children if node.label=='expr'] for children in LevelOrderGroupIter(tree_a)]
             levels_B = [[node for node in children if node.label=='expr'] for children in LevelOrderGroupIter(tree_b)]
             # remove each couple of levels in wich one of them is [] (useless to hold them, the nodes compare will never be true)
@@ -146,13 +157,14 @@ class Population():
                 if levels_A[i] == [] or levels_B[i]==[]:
                     levels_A.remove(levels_A[i])
                     levels_B.remove(levels_B[i])
-            lvl= 1 # level iterator
+            # go down through levels until two nodes with the same label are founded
+            lvl= 1      # level iterator
             selected_node_B=[]
             while lvl<len(levels_A) and lvl<len(levels_B):
-                compatible_couples = [] # list of nodes couple with the same name
+                compatible_couples = []     # list of nodes couple with the same name
                 for node_a in levels_A[lvl]:
                     for node_b in levels_B[lvl]:
-                        if node_a.name.rsplit(')')[1].rsplit('_mut')[0] == node_b.name.rsplit(')')[1].rsplit('_mut')[0]:
+                        if node_a.name.rsplit(')')[1].rsplit('_id')[0] == node_b.name.rsplit(')')[1].rsplit('_id')[0]:
                             compatible_couples.append([node_a, node_b])
                 if compatible_couples != []:
                     break
@@ -170,7 +182,6 @@ class Population():
                     self.fix_indents(selected_node_B, selected_node_A)
             else:
                 return parent_A, parent_B
-            
         #---------------------------------------#
         self.colorize(selected_node_A)
         self.colorize(selected_node_B)
@@ -179,40 +190,33 @@ class Population():
         tmp_B = copy.deepcopy(selected_node_B)
         tmp_B.parent=None
         tmp_A = copy.deepcopy(selected_node_A)
-        # modify the list of parents' selected_node childrens
-        siblings_A = list(selected_node_A.parent.children)
-        # sobstituting it with mutated one
-        siblings_A[selected_node_A.parent.children.index(selected_node_A)] = tmp_B
-        
-        # and reassigning it
-        selected_node_A.parent.children = tuple(siblings_A)
-        # set mutated chromosomes' phenotype as mutated root        
-        child_A.phenotype = tree_a
-        #-----------
-        # modify the list of parents' selected_node childrens
+        #----------- A
+        siblings_A = list(selected_node_A.parent.children)      # modify the list of parents' selected_node childrens                  
+        siblings_A[selected_node_A.parent.children.index(       # sobstituting it with switched one
+            selected_node_A)] = tmp_B
+        selected_node_A.parent.children = tuple(siblings_A)     # and reassigning it 
+        child_A.phenotype = tree_a                              # set it to be the first child
+        #----------- B
         siblings_B = list(selected_node_B.parent.children)
-        # sobstituting it with mutated one
-        siblings_B[selected_node_B.parent.children.index(selected_node_B)] = tmp_A
-        # and reassigning it
+        siblings_B[selected_node_B.parent.children.index(
+            selected_node_B)] = tmp_A
         tmp_A.parent = selected_node_B.parent
         selected_node_B.parent.children = tuple(siblings_B)
-        # set mutated chromosomes' phenotype as mutated root  
         child_B.phenotype = tree_b
-        
-        child_A.tree_to_png(generation)
-        child_B.tree_to_png(generation)
-        
         return child_A, child_B
 
-    def mutate(self, chromosome, p=0.05): #TODO: MODIFY BORDER='9' AS ON CROSSOVER (CREATE VAR BORDER IN IF COLOR)
+    def mutate(self, chromosome):
         '''
-        Mutate genes of a chromosomes.
-        retrieve tree max_depth (height?)
-        arange an array of levels of crescent probability (one prob for each level)
-        random choose a level
-        random choose a node inside that level (or rand chose an id?)
-        do above things
+        Mutate genes of a chromosomes by random selecting a subgraph and substituing it
+        with a random generated one
+
+        Args:
+            chromosome (Chromosome)
+        Returns:
+            mutated chromosome
         '''
+        if np.random.uniform() > self.mutation_prob:
+            return chromosome
         root = chromosome.phenotype
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
         levels = [[node for node in children if node.label=='expr'or node.label=='cond'] 
@@ -220,15 +224,14 @@ class Population():
         while levels[-1]==[]:
             levels.pop()
         max_depth = len(levels)
-        # random select a level in which a node will be random selected for mutation
         # the higher the level - the higher the probability is to be choosed
         levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
         level = np.random.choice(levels, p=levels_prob)
-
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
         level_number=len(level)
-        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name.rsplit('_mut')[0])))
+        mut_node_id = int(''.join(filter(str.isdigit, selected_node.name.rsplit('_id')[0])))
+        # set colors
         color = '/oranges9/2'
         if selected_node.color.rsplit('/',1)[0]=='/blues9':
             border = '/blues9/9'
@@ -243,69 +246,56 @@ class Population():
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color.rsplit('/',1)[1], label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
-            # instantiate a new parser 
+            mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
+            # instantiate a new parser and set parser parameters back to those of the selected_node
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
-            # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
-            if selected_node.name.rsplit(')')[1].rsplit('_mut')[0] in ['expr_a', 'expr_b']:
+            if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
                 indent = selected_node.indent
             else:
                 indent = selected_node.indent+1
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=indent, extra_id='_mut_'+color.rsplit('/',1)[1])
-        
+            # start generating new subtree
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=indent)
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
-            # create new mutated node (root)
-            mutated = Node(selected_node.name+'_mut_'+color.rsplit('/',1)[1], label='cond', code=selected_node.code, color=color, border=border)
-            # instantiate a new parser 
+            mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
             parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
-            # set parser parameters to those of the selected_node and start parsing
             parser.i_gene = mut_node_id+1
-            mutated = parser.start_derivating('cond', tree_depth=level_number, extra_id='_mut_'+color.rsplit('/',1)[1])
+            mutated = parser.start_derivating('cond', tree_depth=level_number)
 
-        # modify the list of parents' selected_node childrens
-        new_children = list(selected_node.parent.children)
-        # sobstituting it with mutated one
-        new_children[selected_node.parent.children.index(selected_node)] = mutated
-        # and reassigning it
-        selected_node.parent.children = tuple(new_children)
-        # set mutated chromosomes' phenotype as mutated root
-        chromosome.phenotype = root
+        new_children = list(selected_node.parent.children)      # modify the list of parents' selected_node childrens
+        new_children[selected_node.parent.children.index(       # sobstituting it with mutated one
+            selected_node)] = mutated
+        selected_node.parent.children = tuple(new_children)     # and reassigning it
+        chromosome.phenotype = root                             # set mutated chromosomes' phenotype as mutated root
         return chromosome
-
 
     def fix_indents(self, selected_node_A, selected_node_B):
         for node in PreOrderIter(selected_node_A): #-\t
-            if node.name.rsplit(')')[1].rsplit('_mut')[0] == 'expr_e':
+            if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
                 node.indent-=1
                 node.code = ('else:\n').join(node.code.split('\telse:\n\t'))
             elif node.label=='expr':
                 node.indent-=1
                 if node.code!='':
                     node.code = node.code[:-1]
-
         for node in PreOrderIter(selected_node_B): #+\t
-            if node.name.rsplit(')')[1].rsplit('_mut')[0] == 'expr_e':
+            if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
                 node.indent+=1
                 node.code=('\telse:\n\t').join(node.code.split('else:\n'))
             elif node.label=='expr':
                 node.indent+=1
                 if node.code!='':
                     node.code += '\t'
-        #return selected_node_A, selected_node_B
 
     def colorize(self, node):
         color = '/blues9/2'
-        # orange
-        if node.color.rsplit('/',1)[0]=='/oranges9':
+        if node.color.rsplit('/',1)[0]=='/oranges9': # orange
             border = '/oranges9/9'
-            # coloring all its childs the same
-            for child in PreOrderIter(node):
+            for child in PreOrderIter(node):         # coloring all its childs the same
                 child.color=color
                 child.border=border
-        # gray or blue
-        else: 
+        else:                                        # gray or blue
             for child in PreOrderIter(node):
                 if child.color.rsplit('/',1)[0]=='/oranges9':
                     border = '/oranges9/9'
@@ -318,7 +308,6 @@ class Population():
                         color = '/blues9/2'
                 child.color=color
                 child.border=border
-        #return node
 
 class Environment():
     '''

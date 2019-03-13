@@ -59,10 +59,10 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        # for i,chromosome in enumerate(population.chromosomes):
-        #     if population.chromosomes_fitness[i]>=population.survival_threashold:
-        #         chromosome.tree_to_png(generation)
-        #         chromosome.generate_solution(generation, to_file=True)
+        for i,chromosome in enumerate(population.chromosomes):
+            if population.chromosomes_fitness[i]>=population.survival_threashold:
+                chromosome.tree_to_png(generation)
+                chromosome.generate_solution(generation, to_file=True)
 
         population.do_natural_selection()
         
@@ -76,8 +76,7 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
             for j in range(i+1,elites_len):
                 child1, child2 = population.crossover(
                     population.chromosomes[ranks[i]],
-                    population.chromosomes[ranks[j]],
-                    generation
+                    population.chromosomes[ranks[j]]
                 )
                 offsprings.append(child1)
                 offsprings.append(child2)
@@ -118,7 +117,8 @@ if __name__ == '__main__':
     abs_time_start = time.time()
 
     population = Population(
-        mutation_prob   = 0.05,
+        mutation_prob   = 0.9,
+        crossover_prob  = 0.9,
         max_elite       = 10
     )
     environment = Environment(
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     env, all_results = evolve(
         population, 
         environment, 
-        initial_n_chr = 200, 
+        initial_n_chr = 20, 
         n_generations = 10,
         seed          = sid
     )#123456 #2400846564
