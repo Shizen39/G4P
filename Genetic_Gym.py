@@ -281,27 +281,28 @@ class Population():
         return chromosome
 
     def fix_indents(self, selected_node_A, selected_node_B):
+        if selected_node_A.name.rsplit(')')[1].rsplit('_id')[0] != 'expr_e':
+            diff = selected_node_A.code.count('\t') - selected_node_B.code.count('\t')
+        else:
+            diff = selected_node_A.code.split('else:\n')[1].count('\t') - selected_node_B.code.split('else:\n')[1].count('\t')
+        n_tab = '\t'*diff
         for node in PreOrderIter(selected_node_A): #-\t
             if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
-                node.indent-=1
-                node.code = ('else:\n').join(node.code.split('\telse:\n\t'))
+                node.indent-=diff
+                node.code = ('else:\n').join(node.code.split(n_tab+'else:\n'+n_tab)) # divide in ['\n\t\t, \t\t\t] and then join with else:\n
             elif node.label=='expr':
-                node.indent-=1
+                node.indent-=diff
                 if node.code!='':
-                    node.code = node.code[:-1]
+                    node.code = node.code[:-diff]
 
         for node in PreOrderIter(selected_node_B): #+\t
             if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
-                node.indent+=1
-                node.code=('\telse:\n\t').join(node.code.split('else:\n'))
+                node.indent+=diff
+                node.code=(n_tab+'else:\n'+n_tab).join(node.code.split('else:\n'))
             elif node.label=='expr':
-                node.indent+=1
+                node.indent+=diff
                 if node.code!='':
-                    node.code += '\t'
-            if not node.is_leaf and node.children[0].label=='ACT':
-                if node.code!='' and node.name.rsplit(')')[1].rsplit('_id')[0] != 'expr_b':
-                    node.indent+=1
-                    node.code+='\t'        
+                    node.code += n_tab
 
 
     def colorize(self, node):

@@ -102,7 +102,8 @@ class Chromosome():
             print(e.msg)
             self.tree_to_png(0)
             self.generate_solution(0, True)
-            # sys.exc_info()
+            sys.exc_info()
+            sys.exit()
         try:
             action=loc['get_action'](observation, states)
         except:# UnboundLocalError:   #observation did not pass through any if else

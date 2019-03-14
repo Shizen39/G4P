@@ -51,6 +51,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         population.best_individual = population.chromosomes[np.argmax(population.chromosomes_fitness)]
         all_populations.append(population)
         if environment.converged:
+            print(population.best_individual)
             break
         #------------------------------#
 
@@ -121,12 +122,12 @@ if __name__ == '__main__':
     environment = Environment(
             env_id          = 'CartPole-v0',
             n_episodes      = 150,
-            bins            = (3,2,5,5)
+            bins            = (2,2,6,6)
         )
     population = Population(
         mutation_prob   = 0.9,
         crossover_prob  = 0.9,
-        max_elite       = 15,
+        max_elite       = 10,
         bins            = environment.bins
     )
     
@@ -135,10 +136,10 @@ if __name__ == '__main__':
         population, 
         environment, 
         initial_n_chr = 200, 
-        n_generations = 5,
+        n_generations = 15,
         seed          = sid,
-        genotype_len  = 10,
-        MAX_DEPTH     = 5
+        genotype_len  = 7,
+        MAX_DEPTH     = 7
     )
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
@@ -171,19 +172,20 @@ if __name__ == '__main__':
         plt.title(title)
         save_dir = './outputs/GEN-{}/'.format(i)
         plt.savefig(save_dir+'plot.png', bbox_inches='tight')
-
+    print('used seed = ', sid)
     #--------------evaluate--------------------#
     wrap = input('Do you want to run the evolved policy and save it?    [y/N]    ')
     if wrap=='y':
         import os
         save_dir = './outputs/'+env.spec.id+'_results/' + str(time.time()) + '/'
+        # env.seed(0)
         env = wrappers.Monitor(env, save_dir, force=True)
 
         best_policy = all_populations.pop().best_individual
         print(best_policy)
         for episode in range(ep_len):
-            environment.run_one_episode(best_policy, episode, render=True)
+            environment.run_one_episode(best_policy, episode, prnt=True)
         env.env.close()
     else:
         env.close()
-    print('used seed = ', sid)
+    
