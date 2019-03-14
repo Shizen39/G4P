@@ -26,7 +26,6 @@ import os, shutil
 from Genetic_Gym import Population, Environment
 
 
-#TODO: crossover, mutation, Plot
 
 def evolve(population, environment, initial_n_chr, n_generations, seed):
     np.random.seed(seed)
@@ -72,14 +71,20 @@ def evolve(population, environment, initial_n_chr, n_generations, seed):
         #--------------CROSSING OVER--------------# 
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
         offsprings = []
+        jobs=[]
         for i in range(elites_len):
             for j in range(i+1,elites_len):
-                child1, child2 = population.crossover(
-                    population.chromosomes[ranks[i]],
-                    population.chromosomes[ranks[j]]
-                )
-                offsprings.append(child1)
-                offsprings.append(child2)
+                jobs.append(pool.apply_async(population.crossover, [population.chromosomes[ranks[i]], population.chromosomes[ranks[j]]]))
+        for j in jobs:
+            if not j.ready():
+                j.wait()
+            child1,child2=j.get()
+            offsprings.append(child1)
+            offsprings.append(child2)
+        
+
+                
+
         #------------------------------#
         
         #----------------MUTATION----------------#
@@ -107,7 +112,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=123456
+        sid=3745847528
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -131,16 +136,15 @@ if __name__ == '__main__':
         population, 
         environment, 
         initial_n_chr = 100, 
-        n_generations = 4,
+        n_generations = 10,
         seed          = sid
-    )#613060700 #3745847528
+    )#613060700 #
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
     abs_time= time.time() - abs_time_start
     
     #---------------plotting-------------#
-    #TODO: PLOT EVERY GENERATIO IN DISTINCT FILES (TITLE= GEN [1/N]) ?
-
+    print('Plotting ... ')
     ep_len = len(all_populations[0].chromosomes_scores[0])
     z_axys = np.arange(ep_len)
     for i,population in enumerate(all_populations):

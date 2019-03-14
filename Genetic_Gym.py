@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from multiprocessing import Pool
 import multiprocessing
-#from joblib import Parallel, delayed
 import copy
 
 from Chromosome import Chromosome
@@ -409,7 +408,7 @@ class Environment():
         '''
         population_scores = [] 
         jobs=[]
-        for i,chromosome in enumerate(population.chromosomes):                                           #population_scores = Parallel(n_jobs=-1)(delayed(evaluate_policy)(env, chromosome, n_episodes) for chromosome in population if not converged)
+        for i,chromosome in enumerate(population.chromosomes):                                           
             jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i, to_file]))
         for j in jobs:
             if not self.converged:
