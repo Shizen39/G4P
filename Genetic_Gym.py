@@ -290,14 +290,6 @@ class Population():
                 if node.code!='':
                     node.code = node.code[:-1]
 
-            elif node.label == 'ACT':
-                if node.parent.label=='expr':
-                    node.parent.indent+=1
-                    if node.parent.code!='':
-                        node.parent.code += '\t'
-            #v. foglio
-            
-
         for node in PreOrderIter(selected_node_B): #+\t
             if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
                 node.indent+=1
@@ -306,13 +298,10 @@ class Population():
                 node.indent+=1
                 if node.code!='':
                     node.code += '\t'
-            
-            elif node.label == 'ACT':
-                if node.parent.label=='expr':
-                    node.parent.indent-=1
-                    if node.parent.code!='':
-                        node.parent.code = node.parent.code[:-1]
-            
+            if not node.is_leaf and node.children[0].label=='ACT':
+                if node.code!='' and node.name.rsplit(')')[1].rsplit('_id')[0] != 'expr_b':
+                    node.indent+=1
+                    node.code+='\t'        
 
 
     def colorize(self, node):

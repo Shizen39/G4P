@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=1281582504#613060700 #2541358619 # BUUUUG 1281582504
+        sid=1281582504#613060700 #2541358619 # 1281582504 #1706801513
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)

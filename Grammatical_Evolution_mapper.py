@@ -101,10 +101,11 @@ class Parser():
             if self.method == 'full':                    # and method is FULL
                 idx = gene_seq[self.i_gene] % 3          # skip terminal ACTION so we have always tree of max_depth
             else:                                        # method is GROW
-                if node.name.rsplit('_id')[0]=='('+str(self.i_gene+1)+')expr_a' or node.name.rsplit('_id')[0]=='('+str(self.i_gene+1)+')expr_b':
+                if node.name.rsplit(')')[1].rsplit('_id')[0]=='expr_a' or node.name.rsplit(')')[1].rsplit('_id')[0]=='expr_b':
                     idx = gene_seq[self.i_gene] % 3 # in order to not have two ACTION terminals that aren't a consequence of if/else in case <expr><expr> was chosen
                 else:
                     idx = gene_seq[self.i_gene] % 4
+
             i_gene = self.i_gene
             if idx == 0:                                                                            # 0
                 child1 = Node('('+str(i_gene)+')cond'+'_id_'+str(id(node)), parent=node, label='cond', code="if ", color=self.color, border=self.border)
