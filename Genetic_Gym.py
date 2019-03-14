@@ -115,7 +115,7 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
 
-    def crossover(self, parent_A, parent_B):
+    def crossover(self, parent_A, parent_B, seed):
         '''  
         Produce offsprings switching two random subgraph selected in the two parents trees and 
         generating two different offsprings.
@@ -126,10 +126,20 @@ class Population():
         Args:
             parent_A (Chromosome)
             parent_B (Chromosome)
+            seed (int): random seed used for initializate new RNG for every single crossover run *
         Returns:
             child_1, child2
+        
+        NOTE: running functions in parallels means that all spawned children processes share the same RNG (e.g. numpy.random),
+                and - beacouse they all start at the same time - they share also the same seed. That is, each time a np.random.function
+                is called in that function, for each childrens processes it will always return the same sequence of "random" numbers.
+              Creating a different RNG for each child process avoid this problem.
+              Seeding every different RNG with a np.randint number ensure program reproducibility.
         '''
-        if np.random.uniform() > self.crossover_prob:
+        rng = np.random.RandomState()   # initialize new RNG
+        rng.seed(seed)                  # with selected - random - seed 
+
+        if rng.uniform() > self.crossover_prob:
             return parent_A, parent_B
         child_A = copy.deepcopy(parent_A)
         child_B = copy.deepcopy(parent_B)
@@ -140,9 +150,9 @@ class Population():
             # if both first nodes tree have the same label (both are or cond or expr)
             # choose random node from first expr or second
             if tree_a.children[0].label == 'cond':
-                name = np.random.choice(['expr_i', 'expr_e'])
+                name = rng.choice(['expr_i', 'expr_e'])
             else:
-                name = np.random.choice(['expr_a', 'expr_b'])
+                name = rng.choice(['expr_a', 'expr_b'])
             selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
             selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
         else:
@@ -171,7 +181,7 @@ class Population():
                     lvl+=1
             if compatible_couples != []:
                 # random select a couple of nodes from all set of compatiple nodes of the same level
-                selected_node_A, selected_node_B = compatible_couples[np.random.choice(len(compatible_couples))]
+                selected_node_A, selected_node_B = compatible_couples[rng.choice(len(compatible_couples))]
                 # the two nodes have different indents, beacouse they have inherit it from their - different - parents
                 if selected_node_A.indent > selected_node_B.indent:
                     # decrement each indents of node_A family by 1 and increment those of node_B
@@ -412,8 +422,8 @@ class Environment():
             jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i, to_file]))
         for j in jobs:
             if not self.converged:
-                if not j.ready():
-                    j.wait()    # ensure order
+                # if not j.ready():
+                #     j.wait()    # ensure order
                 score=j.get()
                 population_scores.append(score)
                 if np.mean(score)>=self.env.spec.reward_threshold:
