@@ -57,10 +57,10 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        for i,chromosome in enumerate(population.chromosomes):
-            if population.chromosomes_fitness[i]>=population.survival_threashold:
-                chromosome.tree_to_png(generation)
-                chromosome.generate_solution(generation, to_file=True)
+        # for i,chromosome in enumerate(population.chromosomes):
+        #     if population.chromosomes_fitness[i]>=population.survival_threashold:
+        #         chromosome.tree_to_png(generation)
+        #         chromosome.generate_solution(generation, to_file=True)
 
         population.do_natural_selection()
         
@@ -91,7 +91,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
 
         #-----------NEXT GENERATION-----------# 
         # population = elite
-        population = Population(mutation_prob=population.mutation_prob, crossover_prob=population.crossover_prob, max_elite=population.max_elite)
+        population = Population(mutation_prob=population.mutation_prob, crossover_prob=population.crossover_prob, max_elite=population.max_elite, bins=environment.bins)
         population.chromosomes = mutated_offsprings
         print('( childs=', len(offsprings), ' tot_pop=', len(population.chromosomes),' )\n\n')
         #------------------------------#
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=613060700
+        sid=1281582504#613060700 #2541358619 # BUUUUG 1281582504
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -118,33 +118,40 @@ if __name__ == '__main__':
         sid=int(sid)
 
     abs_time_start = time.time()
-
+    environment = Environment(
+            env_id          = 'CartPole-v0',
+            n_episodes      = 150,
+            bins            = (3,2,5,5)
+        )
     population = Population(
         mutation_prob   = 0.9,
         crossover_prob  = 0.9,
-        max_elite       = 10
+        max_elite       = 15,
+        bins            = environment.bins
     )
-    environment = Environment(
-        env_id          = 'CartPole-v0',
-        n_episodes      = 150,
-        bins            = (3,3,3,3)
-    )
+    
 
     env, all_populations = evolve(
         population, 
         environment, 
-        initial_n_chr = 100, 
+        initial_n_chr = 200, 
         n_generations = 5,
         seed          = sid,
         genotype_len  = 10,
-        MAX_DEPTH     = 10
-    )#613060700
+        MAX_DEPTH     = 5
+    )
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
     abs_time= time.time() - abs_time_start
     
     #---------------plotting-------------#
     print('Plotting ... ')
+
+
+    for generation, population in enumerate(all_populations):
+        population.best_individual.tree_to_png(generation)
+        population.best_individual.generate_solution(generation, to_file=True)
+
     ep_len = len(all_populations[0].chromosomes_scores[0])
     z_axys = np.arange(ep_len)
     for i,population in enumerate(all_populations):

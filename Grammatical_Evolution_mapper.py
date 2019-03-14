@@ -34,17 +34,19 @@ class Parser():
         color (str)
         colorscheme (str)
     '''
-    def __init__(self, initial_gene_seq, root, method, MAX_DEPTH, MAX_WRAP):
+    def __init__(self, initial_gene_seq, root, bins, method, MAX_DEPTH, MAX_WRAP):
         self.wrap_ctr = 0                           # global counter that count number of time that wrap func is applied
         self.i_gene = -1                            # global index that loops through all genes
         
         self.initial_gene_seq = initial_gene_seq    # global initial gene_seq (used for wrapping purposes)
         self.root = root                            # starting node
 
+        self.bins = bins
+
         self.method = method                        # full or grow
         self.MAX_WRAP = MAX_WRAP                    # max number of time that wrap func is applied to the sequence of genes
         self.MAX_DEPTH = MAX_DEPTH -2               # max depth of the tree
-    
+
         self.color=''
         self.border=''
         self.extra_id=''
@@ -148,10 +150,10 @@ class Parser():
         self.COMP(gene_seq, child2)
 
         child3 = Node('('+str(i_gene)+')N_STATES_state'+'_id_'+str(id(node)), parent=node, label='N_STATES', code=' states[', color=self.color, border=self.border)
-        self.N_STATES(gene_seq, child3, False, '_state')
+        n_states = self.N_STATES(gene_seq, child3, False, '_state')
         
         child4 = Node('('+str(i_gene)+')SPT_PT'+'_id_'+str(id(node)), parent=node, label='SPLT_PT', code='][', color=self.color, border=self.border)
-        self.SPLT_PT(gene_seq, child4)       
+        self.SPLT_PT(gene_seq, child4, n_states)       
 
 
     #-----------TERMINALS-----------------#
@@ -194,9 +196,10 @@ class Parser():
             Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='2', code="2", color=self.color, border=self.border)
         if idx == 3:
             Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='3', code="3", color=self.color, border=self.border)
+        return idx
 
 
-    def SPLT_PT(self, gene_seq, node):
+    def SPLT_PT(self, gene_seq, node, n_states):
         '''
         SPLIT_PT: /[0-2]/
         '''
@@ -204,13 +207,11 @@ class Parser():
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
-        idx = gene_seq[self.i_gene] % 3
-        if idx == 0:
-            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='0', code="0]", color=self.color, border=self.border)
-        if idx == 1:
-            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='1', code="1]", color=self.color, border=self.border)
-        if idx == 2:
-            Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label='2', code="2]", color=self.color, border=self.border)
+        idx = gene_seq[self.i_gene] % self.bins[n_states]
+
+        for n_of_splt in range(self.bins[n_states]):
+            if idx == n_of_splt:
+                Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label=str(idx), code=str(idx)+"]", color=self.color, border=self.border)
 
 
     def ACTION(self, gene_seq, node):

@@ -39,7 +39,7 @@ class Chromosome():
         self.phenotype = None
         self.solution = None
 
-    def generate_phenotype(self, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
+    def generate_phenotype(self, bins, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
         '''
         Generate phenotype from genotype (derivation tree from a list of int).
         Genotype-phenotype mapping function is the MOD operator between genes of the genotype and rules of the Grammar. 
@@ -51,7 +51,7 @@ class Chromosome():
             to_shell (boolean): print tree on shell
         '''
         root = Node('('+str(0)+')expr-start', label='expr', code='', color='/greys9/1', border='/greys9/9')                     # root of derivation tree
-        parser = Parser(self.genotype, root, method, MAX_DEPTH, MAX_WRAP)
+        parser = Parser(self.genotype, root, bins, method, MAX_DEPTH, MAX_WRAP)
         
         self.phenotype = parser.start_derivating('expr')
         if to_shell:
@@ -98,8 +98,11 @@ class Chromosome():
         try:
             exec(self.solution, {}, loc)
         except SyntaxError as e:
-            print(self)
-            exit(e)
+            import sys
+            print(e.msg)
+            self.tree_to_png(0)
+            self.generate_solution(0, True)
+            sys.exc_info()
         try:
             action=loc['get_action'](observation, states)
         except UnboundLocalError:   #observation did not pass through any if else

@@ -53,7 +53,7 @@ class Population():
         survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
         best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
     '''
-    def __init__(self, mutation_prob, crossover_prob, max_elite):
+    def __init__(self, mutation_prob, crossover_prob, max_elite, bins):
         # Inizialization parameters
         self.mutation_prob = mutation_prob
         self.crossover_prob = crossover_prob
@@ -64,6 +64,7 @@ class Population():
         self.chromosomes_fitness = []
         self.survival_threashold = None
         self.best_individual     = None
+        self.bins = bins
     
     def initialize_chromosomes(self, n_chromosomes, genotype_len, MAX_DEPTH, MAX_WRAP=5, to_png=False):
         '''
@@ -87,9 +88,9 @@ class Population():
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
-                chromosome.generate_phenotype('grow', MAX_DEPTH, MAX_WRAP, to_png=to_png)
+                chromosome.generate_phenotype(self.bins, 'grow', MAX_DEPTH, MAX_WRAP, to_png=to_png)
             else:
-                chromosome.generate_phenotype('full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
+                chromosome.generate_phenotype(self.bins, 'full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
         self.chromosomes = population
 
     def do_natural_selection(self):
@@ -257,7 +258,7 @@ class Population():
             # create new mutated node (root)
             mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
             # instantiate a new parser and set parser parameters back to those of the selected_node
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.bins, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
                 indent = selected_node.indent
@@ -268,7 +269,7 @@ class Population():
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
-            parser = Parser(mut_genotype, mutated, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.bins, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('cond', tree_depth=level_number)
 
@@ -288,6 +289,15 @@ class Population():
                 node.indent-=1
                 if node.code!='':
                     node.code = node.code[:-1]
+
+            elif node.label == 'ACT':
+                if node.parent.label=='expr':
+                    node.parent.indent+=1
+                    if node.parent.code!='':
+                        node.parent.code += '\t'
+            #v. foglio
+            
+
         for node in PreOrderIter(selected_node_B): #+\t
             if node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_e':
                 node.indent+=1
@@ -296,6 +306,14 @@ class Population():
                 node.indent+=1
                 if node.code!='':
                     node.code += '\t'
+            
+            elif node.label == 'ACT':
+                if node.parent.label=='expr':
+                    node.parent.indent-=1
+                    if node.parent.code!='':
+                        node.parent.code = node.parent.code[:-1]
+            
+
 
     def colorize(self, node):
         color = '/blues9/2'
@@ -327,9 +345,10 @@ class Environment():
         bins (list(int)): list that divide each state of all possible observations in discrete intervalls
     '''
     def __init__(self, env_id, n_episodes, bins):
+        self.bins = bins
         self.env = gym.make(env_id)
         self.n_episodes = n_episodes
-        self.states =  self.subdivide_observation_states(bins)
+        self.states =  self.subdivide_observation_states(self.bins)
         self.converged = False
         
 
