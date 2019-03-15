@@ -313,7 +313,7 @@ class Population():
                     node.code += n_tab
                     node.indent+=diff
                 else:
-                    node.indent-=diff
+                    node.indent+=diff
                 # elif node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_b':
                 #     node.indent+=diff
                 # elif node.code=='' :

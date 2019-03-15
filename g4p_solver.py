@@ -146,7 +146,7 @@ if __name__ == '__main__':
         n_generations = 5,
         seed          = sid,
         genotype_len  = 20,
-        MAX_DEPTH     = 10
+        MAX_DEPTH     = 5
     )
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
