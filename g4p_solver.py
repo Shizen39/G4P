@@ -29,7 +29,7 @@ from Genetic_Gym import Population, Environment
 
 def evolve(population, environment, initial_n_chr, n_generations, genotype_len, MAX_DEPTH, seed):
     np.random.seed(seed)
-    environment.env.seed(0)
+    environment.seed = seed
 
     all_populations=[]
 
@@ -41,9 +41,9 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
     
     for generation in range(n_generations):
         #--------------EVALUATE MODELS--------------#
-        population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=True)
-        population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
+        population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=False)
 
+        population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
         #------------------------------#
 
         #-------------EXIT IF CONVERGED-------------#
@@ -51,7 +51,6 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         population.best_individual = population.chromosomes[np.argmax(population.chromosomes_fitness)]
         all_populations.append(population)
         if environment.converged:
-            print(population.best_individual)
             break
         #------------------------------#
 
@@ -69,7 +68,9 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #------------------------------#
 
         #--------------CROSSING OVER--------------# 
+        
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
+
         offsprings = []
         jobs=[]
         random_seeds=[]
@@ -85,17 +86,15 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
                             population.chromosomes[ranks[i]], population.chromosomes[ranks[j]],
                             random_seeds[i][j-i-1]
                             ]))
-
         for j in jobs:
-            # if not j.ready():
-            #     j.wait()
             child1,child2=j.get()
             offsprings.append(child1)
             offsprings.append(child2)        
         #------------------------------#
-        
+
         #----------------MUTATION----------------#
         mutated_offsprings = [population.mutate(child) for child in offsprings]    
+
         #------------------------------#
 
         #-----------NEXT GENERATION-----------# 
@@ -106,7 +105,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #------------------------------#
         
     pool.close()
-    return environment.env, all_populations
+    return all_populations
 
 
 
@@ -140,11 +139,11 @@ if __name__ == '__main__':
     )
     
 
-    env, all_populations = evolve(
+    all_populations = evolve(
         population, 
         environment, 
         initial_n_chr = 200, 
-        n_generations = 15,
+        n_generations = 5,
         seed          = sid,
         genotype_len  = 7,
         MAX_DEPTH     = 5
@@ -164,17 +163,22 @@ if __name__ == '__main__':
     ep_len = len(all_populations[0].chromosomes_scores[0])
     z_axys = np.arange(ep_len)
     for i,population in enumerate(all_populations):
-        
         ax= plt.figure(figsize=(20, 19)).add_subplot(111, projection='3d')
-        ax.set_xticks( np.arange(len(population.chromosomes)) )
-        for j,score in enumerate(population.chromosomes_scores):
+        ax.set_xticks( np.arange(population.max_elite) )
+
+        population.chromosomes_scores = np.array(population.chromosomes_scores)
+        sorted_scores = list(reversed(population.chromosomes_scores[np.mean(population.chromosomes_scores, axis=1).argsort()]))
+        for j,score in enumerate(sorted_scores):
             fill = ep_len# if env.spec.reward_threshold != None else int(env.spec.reward_threshold)
-            ax.plot(np.full(fill, j, int), z_axys, score, zorder=j)
+            if j<=population.max_elite:                
+                ax.plot(np.full(fill, j, int), z_axys, score, zorder=j)
+            else:
+                break
         ax.set_zlabel("Rewards")
         ax.set_ylabel("Episode")
         ax.set_xlabel("Chromosome")
         
-        title=  env.spec.id+" solved in {} generations\n".format(len(all_populations)-1)
+        title=  environment.env.spec.id+" solved in {} generations\n".format(len(all_populations)-1)
         title += "time elapsed = {} sec\n".format(abs_time)
         title += "GENERATION [ {} / {} ]".format(i, len(all_populations)-1)
         plt.title(title)
@@ -185,14 +189,12 @@ if __name__ == '__main__':
     wrap = input('Do you want to run the evolved policy and save it?    [y/N]    ')
     if wrap=='y':
         import os
-        save_dir = './outputs/'+env.spec.id+'_results/' + str(time.time()) + '/'
+        save_dir = './outputs/'+environment.env.spec.id+'_results/' + str(time.time()) + '/'
         # env.seed(0)
         environment.env = wrappers.Monitor(environment.env, save_dir, force=True)
-
         best_policy = all_populations.pop().best_individual
-        print(best_policy)
         for episode in range(ep_len):
-            environment.run_one_episode(best_policy, episode, prnt=True)
+            environment.run_one_episode(environment.env, best_policy, episode, prnt=True)
         environment.env.env.close()
     else:
         environment.env.close()

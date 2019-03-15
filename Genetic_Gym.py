@@ -84,7 +84,7 @@ class Population():
         min_genotype_len = genotype_len - int(genotype_len/2)
         max_genotype_len = genotype_len + int(genotype_len/2)
         # set genotype
-        population = [Chromosome(GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for _ in range(n_chromosomes)]
+        population = [Chromosome(i=i, GENOTYPE_LEN = np.random.randint(min_genotype_len, max_genotype_len)) for i in range(n_chromosomes)]
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
@@ -354,10 +354,10 @@ class Environment():
     def __init__(self, env_id, n_episodes, bins):
         self.bins = bins
         self.env = gym.make(env_id)
-        self.env.seed(0)
         self.n_episodes = n_episodes
         self.states =  self.subdivide_observation_states(self.bins)
         self.converged = False
+        self.seed = 0
         
 
     def subdivide_observation_states(self, bins):
@@ -386,7 +386,7 @@ class Environment():
             states.append(x)
         return states
     
-    def run_one_episode(self, chromosome, episode, prnt=False, render=False):
+    def run_one_episode(self, process_env, chromosome, episode, prnt=False, render=False):
         '''
         Run a single gym episode (composed by n timesteps), until that episode reach a terminal state (done = True).
 
@@ -399,11 +399,11 @@ class Environment():
         '''
         episode_reward = 0
         done = False
-        obs = self.env.reset()
+        obs = process_env.reset()
         while not done:
-            if render: self.env.render()
+            if render: process_env.render()
             action = chromosome.execute_solution(obs, self.states)
-            obs, reward, done, _ = self.env.step(action)
+            obs, reward, done, _ = process_env.step(action)
             episode_reward += reward
         if prnt: print('V' if episode_reward == 200 else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
         return episode_reward
@@ -418,17 +418,19 @@ class Environment():
         Returns:
             chromosome_scores (list(int)): list of all scores of the chromosome, of all episodes
         '''
-        self.env.seed(0)
-        chromosome_scores = deque(maxlen = self.env.spec.trials)
+        process_env = gym.make(self.env.spec.id)
+        process_env.seed(self.seed)
+        chromosome_scores = deque(maxlen = process_env.spec.trials)
         # set chromosome solutions' code
         chromosome.generate_solution(to_file)
         # run solution code
         for episode in range(self.n_episodes):
-            reward = self.run_one_episode(chromosome, episode, prnt, render)
+            reward = self.run_one_episode(process_env, chromosome, episode, prnt, render)
             chromosome_scores.append(reward)
-            if np.mean(chromosome_scores) >= self.env.spec.reward_threshold and episode>=self.env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
+            if np.mean(chromosome_scores) >= process_env.spec.reward_threshold and episode>=process_env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
         print("Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
+        process_env.close()
         return list(chromosome_scores)
     
     def parallel_evaluate_population(self, population, pool, to_file=False):

@@ -34,10 +34,11 @@ class Chromosome():
         phenotype (AnyTree.Node): derivation tree rappresentation of the chromosome, that corresponds to the set of genes (nodes) encoded by the genotype
         solution (str): python code rappresentation of the chromosome, that corresponds to the set of genes (line of codes) translated by the phenotype
     '''
-    def __init__(self, GENOTYPE_LEN):
+    def __init__(self, i, GENOTYPE_LEN):
         self.genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=GENOTYPE_LEN-1)) # ensure that it starts with rule 1 or 2
         self.phenotype = None
         self.solution = None
+        self.cid = i
 
     def generate_phenotype(self, bins, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
         '''
@@ -80,7 +81,7 @@ class Chromosome():
         if to_file:
             if not os.path.exists('./outputs/GEN-{}'.format(generation)):
                 os.mkdir('./outputs/GEN-{}'.format(generation))
-            file = open("./outputs/GEN-{}/{}.py".format(generation, str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]), 'w')                                    # Create file and write in generated programs'string
+            file = open("./outputs/GEN-{}/{}-{}.py".format(generation, self.cid,str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]), 'w')                                    # Create file and write in generated programs'string
             file.write(self.solution)                                                  #
             file.close()   
 
@@ -106,9 +107,9 @@ class Chromosome():
             sys.exit()
         try:
             action=loc['get_action'](observation, states)
-        except:# UnboundLocalError:   #observation did not pass through any if else
+        except UnboundLocalError:   #observation did not pass through any if else
             #print('Assign low fitness')
-            action= np.random.randint(0,2) #there (action_space.n)
+            action= 0
         
         return action
     
