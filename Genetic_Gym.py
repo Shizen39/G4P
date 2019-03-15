@@ -253,6 +253,8 @@ class Population():
                 color = '/oranges9/2'
         #print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
+            # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_i':
+            #     starting_rule = np.random()
             # create new rando genotype of i_gen + n_descendents lenght
             mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             # create new mutated node (root)
@@ -260,12 +262,12 @@ class Population():
             # instantiate a new parser and set parser parameters back to those of the selected_node
             parser = Parser(mut_genotype, mutated, self.bins, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
-            if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
-                indent = selected_node.indent
-            else:
-                indent = selected_node.indent+1
+            # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
+            #     indent = selected_node.indent
+            # else:
+            #     indent = selected_node.indent+1
             # start generating new subtree
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=indent)
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)

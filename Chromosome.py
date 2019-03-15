@@ -103,6 +103,9 @@ class Chromosome():
             print(e.msg)
             self.tree_to_png(0)
             self.generate_solution(0, True)
+            for pre, _, node in RenderTree(self.phenotype):                                # print tree on terminal
+                print("{}{}".format(pre, node.name)) 
+
             sys.exc_info()
             sys.exit()
         try:
@@ -119,4 +122,4 @@ class Chromosome():
         DotExporter(self.phenotype, 
             nodeattrfunc=lambda node: 'label="{}", style=filled, color="{}", fillcolor="{}"'.format(node.label, node.border, node.color),
             edgeattrfunc=lambda node,child: 'color="{}"'.format(node.border)
-            ).to_picture("./outputs/GEN-{}/{}.png".format(generation, str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]))
+            ).to_picture("./outputs/GEN-{}/{}-{}.png".format(generation, self.cid, str(self).rsplit('<Chromosome.Chromosome object at ')[1][:-1]))

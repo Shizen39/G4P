@@ -129,7 +129,7 @@ if __name__ == '__main__':
     environment = Environment(
             env_id          = 'CartPole-v0',
             n_episodes      = 150,
-            bins            = (3,2,6,6)
+            bins            = (6,3,6,5)
         )
     population = Population(
         mutation_prob   = 0.9,
@@ -145,8 +145,8 @@ if __name__ == '__main__':
         initial_n_chr = 200, 
         n_generations = 5,
         seed          = sid,
-        genotype_len  = 7,
-        MAX_DEPTH     = 5
+        genotype_len  = 20,
+        MAX_DEPTH     = 10
     )
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
@@ -164,16 +164,17 @@ if __name__ == '__main__':
     z_axys = np.arange(ep_len)
     for i,population in enumerate(all_populations):
         ax= plt.figure(figsize=(20, 19)).add_subplot(111, projection='3d')
-        ax.set_xticks( np.arange(population.max_elite) )
+        best_idx = np.argmax(population.chromosomes_fitness)
+        if len(population.chromosomes_scores)>12:
+            low =  0 if best_idx-5<0 else best_idx-10 if best_idx+5>=len(population.chromosomes_scores) else best_idx-5
+            high = len(population.chromosomes_scores) if best_idx+5>=len(population.chromosomes_scores)-1 else best_idx+5
+            scores = np.array(population.chromosomes_scores)[range(low, high)] 
+        else:
+            scores = population.chromosomes_scores
+        ax.set_xticks( np.arange(len(scores)) )
+        for j,score in enumerate(scores):
+            ax.plot(np.full(ep_len, j, int)  , z_axys, score, zorder=j)
 
-        population.chromosomes_scores = np.array(population.chromosomes_scores)
-        sorted_scores = list(reversed(population.chromosomes_scores[np.mean(population.chromosomes_scores, axis=1).argsort()]))
-        for j,score in enumerate(sorted_scores):
-            fill = ep_len# if env.spec.reward_threshold != None else int(env.spec.reward_threshold)
-            if j<=population.max_elite:                
-                ax.plot(np.full(fill, j, int), z_axys, score, zorder=j)
-            else:
-                break
         ax.set_zlabel("Rewards")
         ax.set_ylabel("Episode")
         ax.set_xlabel("Chromosome")
