@@ -72,12 +72,20 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
         offsprings = []
         jobs=[]
+        random_seeds=[]
+        for i in range(elites_len):
+            seed_i=[]
+            for j in range(i+1, elites_len):
+                seed_i.append(np.random.randint(2**32 - 1))
+            random_seeds.append(seed_i)
+
         for i in range(elites_len):
             for j in range(i+1,elites_len):
                 jobs.append(pool.apply_async(population.crossover, [
                             population.chromosomes[ranks[i]], population.chromosomes[ranks[j]],
-                            np.random.randint(2**32 - 1)
+                            random_seeds[i][j-i-1]
                             ]))
+
         for j in jobs:
             # if not j.ready():
             #     j.wait()
@@ -111,7 +119,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=1281582504#613060700 #2541358619 # 1281582504 #1706801513
+        sid=1234
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -122,7 +130,7 @@ if __name__ == '__main__':
     environment = Environment(
             env_id          = 'CartPole-v0',
             n_episodes      = 150,
-            bins            = (2,2,6,6)
+            bins            = (3,2,6,6)
         )
     population = Population(
         mutation_prob   = 0.9,
@@ -139,7 +147,7 @@ if __name__ == '__main__':
         n_generations = 15,
         seed          = sid,
         genotype_len  = 7,
-        MAX_DEPTH     = 7
+        MAX_DEPTH     = 5
     )
     # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
 
@@ -179,13 +187,13 @@ if __name__ == '__main__':
         import os
         save_dir = './outputs/'+env.spec.id+'_results/' + str(time.time()) + '/'
         # env.seed(0)
-        env = wrappers.Monitor(env, save_dir, force=True)
+        environment.env = wrappers.Monitor(environment.env, save_dir, force=True)
 
         best_policy = all_populations.pop().best_individual
         print(best_policy)
         for episode in range(ep_len):
             environment.run_one_episode(best_policy, episode, prnt=True)
-        env.env.close()
+        environment.env.env.close()
     else:
-        env.close()
+        environment.env.close()
     
