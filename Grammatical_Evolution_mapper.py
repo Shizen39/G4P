@@ -202,7 +202,7 @@ class Parser():
 
     def SPLT_PT(self, gene_seq, node, n_states):
         '''
-        SPLIT_PT: /[0-2]/
+        SPLIT_PT: /[n*]/
         '''
         self.i_gene+=1
         if self.i_gene >= len(gene_seq):
