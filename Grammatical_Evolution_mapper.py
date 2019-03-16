@@ -209,7 +209,6 @@ class Parser():
             gene_seq = self.wrap(gene_seq, True)
         
         idx = gene_seq[self.i_gene] % self.environment.bins[n_obs]
-
         for n_of_splt in range(self.environment.bins[n_obs]):
             if idx == n_of_splt:
                 Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label=str(idx), code=str(idx)+"]", color=self.color, border=self.border)

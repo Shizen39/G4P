@@ -215,7 +215,7 @@ class Population():
         child_B.phenotype = tree_b
         return child_A, child_B
 
-    def mutate(self, chromosome):
+    def mutate(self, chromosome, p=None):
         '''
         Mutate genes of a chromosomes by random selecting a subgraph and substituing it
         with a random generated one
@@ -225,7 +225,11 @@ class Population():
         Returns:
             mutated chromosome
         '''
-        if np.random.uniform() > self.mutation_prob:
+        if p!=None:
+            mutation_prob = p
+        else:
+            mutation_prob = self.mutation_prob
+        if np.random.uniform() > mutation_prob:
             return chromosome
         root = chromosome.phenotype
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
@@ -253,21 +257,26 @@ class Population():
                 color = '/oranges9/2'
         #print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
-            # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] == 'expr_i':
-            #     starting_rule = np.random()
-            # create new rando genotype of i_gen + n_descendents lenght
-            mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
-            # create new mutated node (root)
-            mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
-            # instantiate a new parser and set parser parameters back to those of the selected_node
-            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
-            parser.i_gene = mut_node_id+1
-            # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
-            #     indent = selected_node.indent
-            # else:
-            #     indent = selected_node.indent+1
-            # start generating new subtree
-            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
+            if selected_node.children[0].label=='ACT' and np.random.uniform()<=0.5:
+                mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=selected_node.color, border=selected_node.border)
+                ACT = Node(selected_node.children[0].name, parent=mutated, label='ACT', code=selected_node.children[0].code, color=selected_node.children[0].color, border=selected_node.children[0].border)
+                leaf = str(np.random.randint(self.environment.env.action_space.n))
+                Node(selected_node.children[0].children[0].name, parent=ACT, label=leaf, code=leaf+"\n", color=color, border=border)
+
+            else:
+                # create new rando genotype of i_gen + n_descendents lenght
+                mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
+                # create new mutated node (root)
+                mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
+                # instantiate a new parser and set parser parameters back to those of the selected_node
+                parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+                parser.i_gene = mut_node_id+1
+                # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
+                #     indent = selected_node.indent
+                # else:
+                #     indent = selected_node.indent+1
+                # start generating new subtree
+                mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
@@ -413,7 +422,7 @@ class Environment():
             action = chromosome.execute_solution(obs, self.all_obs)
             obs, reward, done, _ = process_env.step(action)
             episode_reward += reward
-        if prnt: print('V' if episode_reward == 200 else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
+        if prnt: print('V' if episode_reward >= self.env.spec.reward_threshold else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
         return episode_reward
     
     def evaluate_chromosome(self, chromosome, i, to_file, prnt=False, render=False):
@@ -437,7 +446,7 @@ class Environment():
             chromosome_scores.append(reward)
             if np.mean(chromosome_scores) >= process_env.spec.reward_threshold and episode>=process_env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
-        print("Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
+        print("(",chromosome.cid,") Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
         process_env.close()
         return list(chromosome_scores)
     
