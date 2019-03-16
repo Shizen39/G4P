@@ -171,6 +171,7 @@ if __name__ == '__main__':
             scores = np.array(population.chromosomes_scores)[range(low, high)] 
         else:
             scores = population.chromosomes_scores
+        print(len(population.chromosomes_scores), len(scores))
         ax.set_xticks( np.arange(len(scores)) )
         for j,score in enumerate(scores):
             ax.plot(np.full(ep_len, j, int)  , z_axys, score, zorder=j)

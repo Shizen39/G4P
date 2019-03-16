@@ -359,7 +359,7 @@ class Environment():
         self.n_episodes = n_episodes
         self.states =  self.subdivide_observation_states(self.bins)
         self.converged = False
-        self.seed = 0
+        self.seed = None
         
 
     def subdivide_observation_states(self, bins):
@@ -449,6 +449,7 @@ class Environment():
         '''
         population_scores = [] 
         jobs=[]
+        ctr=0
         for i,chromosome in enumerate(population.chromosomes):                                           
             jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i, to_file]))
         for j in jobs:
@@ -460,5 +461,11 @@ class Environment():
                 if np.mean(score)>=self.env.spec.reward_threshold:
                     self.converged = True
             else:
-                pool.terminate()
+                ctr+=1
+                if ctr==population.max_elite:   # wait to terminate the pool also if the result is converged
+                    pool.terminate()
+                    break
+                else:
+                    score=j.get()
+                    population_scores.append(score)
         return population_scores
