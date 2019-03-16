@@ -257,30 +257,19 @@ class Population():
                 color = '/oranges9/2'
         #print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
-            if selected_node.children[0].label=='ACT' and np.random.uniform()<=0.5:
-                mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=selected_node.color, border=selected_node.border)
-                ACT = Node(selected_node.children[0].name, parent=mutated, label='ACT', code=selected_node.children[0].code, color=selected_node.children[0].color, border=selected_node.children[0].border)
-                leaf = str(np.random.randint(self.environment.env.action_space.n))
-                Node(selected_node.children[0].children[0].name, parent=ACT, label=leaf, code=leaf+"\n", color=color, border=border)
-
-            else:
-                # create new rando genotype of i_gen + n_descendents lenght
-                mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
-                # create new mutated node (root)
-                mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
-                # instantiate a new parser and set parser parameters back to those of the selected_node
-                parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
-                parser.i_gene = mut_node_id+1
-                # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
-                #     indent = selected_node.indent
-                # else:
-                #     indent = selected_node.indent+1
-                # start generating new subtree
-                mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
+            # create new rando genotype of i_gen + n_descendents lenght
+            mut_genotype = [np.random.randint(1,3)]+list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
+            # create new mutated node (root)
+            mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
+            # instantiate a new parser and set parser parameters back to those of the selected_node
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser.i_gene = mut_node_id+1
+            # start generating new subtree
+            mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
-            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('cond', tree_depth=level_number)
 
