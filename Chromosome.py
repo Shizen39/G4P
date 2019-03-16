@@ -40,19 +40,20 @@ class Chromosome():
         self.solution = None
         self.cid = i
 
-    def generate_phenotype(self, bins, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
+    def generate_phenotype(self, environment, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
         '''
         Generate phenotype from genotype (derivation tree from a list of int).
         Genotype-phenotype mapping function is the MOD operator between genes of the genotype and rules of the Grammar. 
         
         Args:
+            environment (Environment)
+            method (str): method used for generate the tree (full or grow)
             MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
             MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
             to_png (boolean): export tree on png file
-            to_shell (boolean): print tree on shell
         '''
         root = Node('('+str(0)+')expr-start', label='expr', code='', color='/greys9/1', border='/greys9/9')                     # root of derivation tree
-        parser = Parser(self.genotype, root, bins, method, MAX_DEPTH, MAX_WRAP)
+        parser = Parser(self.genotype, root, environment, method, MAX_DEPTH, MAX_WRAP)
         
         self.phenotype = parser.start_derivating('expr')
         if to_shell:
@@ -71,7 +72,7 @@ class Chromosome():
         Args:
             to_file (bool): write program to a file
         '''
-        program_chromosome="def get_action(observation, states):\n\t"                   # Prepare program whit func def and return value
+        program_chromosome="def get_action(observation, all_obs):\n\t"                   # Prepare program whit func def and return value
         for node in PreOrderIter(self.phenotype):   
             program_chromosome+= node.code                                              # get generated program
         program_chromosome+="\n\treturn action"                                          #
@@ -85,13 +86,13 @@ class Chromosome():
             file.write(self.solution)                                                  #
             file.close()   
 
-    def execute_solution(self, observation, states):
+    def execute_solution(self, observation, all_obs):
         '''
         Execute self.solution as python program
         
         Args:
-            observation (list(float)): list of states of the environment
-            states (list(list(float))): list of all possible states of an observation of the environment
+            observation (list(float)): list of all_obs of the environment
+            all_obs (list(list(float))): list of all possible all_obs of an observation of the environment
         
         Returns: an action
         '''
@@ -109,7 +110,7 @@ class Chromosome():
             sys.exc_info()
             sys.exit()
         try:
-            action=loc['get_action'](observation, states)
+            action=loc['get_action'](observation, all_obs)
         except UnboundLocalError:   #observation did not pass through any if else
             #print('Assign low fitness')
             action= 0

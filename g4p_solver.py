@@ -99,7 +99,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
 
         #-----------NEXT GENERATION-----------# 
         # population = elite
-        population = Population(mutation_prob=population.mutation_prob, crossover_prob=population.crossover_prob, max_elite=population.max_elite, bins=environment.bins)
+        population = Population(mutation_prob=population.mutation_prob, crossover_prob=population.crossover_prob, max_elite=population.max_elite, environment=environment)
         population.chromosomes = mutated_offsprings
         print('( childs=', len(offsprings), ' tot_pop=', len(population.chromosomes),' )\n\n')
         #------------------------------#
@@ -126,6 +126,7 @@ if __name__ == '__main__':
         sid=int(sid)
 
     abs_time_start = time.time()
+
     environment = Environment(
             env_id          = 'CartPole-v0',
             n_episodes      = 150,
@@ -135,10 +136,8 @@ if __name__ == '__main__':
         mutation_prob   = 0.9,
         crossover_prob  = 0.9,
         max_elite       = 10,
-        bins            = environment.bins
+        environment     = environment
     )
-    
-
     all_populations = evolve(
         population, 
         environment, 
@@ -148,7 +147,28 @@ if __name__ == '__main__':
         genotype_len  = 20,
         MAX_DEPTH     = 5
     )
-    # env, best_policy, all_populations = evolve('MountainCar-v0', 200, 50, (7,2), sid=sid, mut_prob=0.17, max_elite=11)#333555669
+
+    # environment = Environment( 
+    #         env_id          = 'MountainCar-v0',
+    #         n_episodes      = 150,
+    #         bins            = (7,4),
+    #     )
+    # population = Population(
+    #     mutation_prob   = 0.9,
+    #     crossover_prob  = 0.9,
+    #     max_elite       = 10,
+    #     environment     = environment
+    # )
+    # all_populations = evolve(
+    #     population, 
+    #     environment, 
+    #     initial_n_chr = 200, 
+    #     n_generations = 5,
+    #     seed          = sid,
+    #     genotype_len  = 20,
+    #     MAX_DEPTH     = 5
+    # )
+
 
     abs_time= time.time() - abs_time_start
     
@@ -171,7 +191,6 @@ if __name__ == '__main__':
             scores = np.array(population.chromosomes_scores)[range(low, high)] 
         else:
             scores = population.chromosomes_scores
-        print(len(population.chromosomes_scores), len(scores))
         ax.set_xticks( np.arange(len(scores)) )
         for j,score in enumerate(scores):
             ax.plot(np.full(ep_len, j, int)  , z_axys, score, zorder=j)

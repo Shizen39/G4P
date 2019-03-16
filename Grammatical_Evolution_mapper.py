@@ -28,20 +28,24 @@ class Parser():
     Args:
         initial_gene_seq (list(int)): the set of genes (integers) of the genotype
         root (AnyTree.Node): starting node of the derivation tre, color=self.color, border=self.bordere
+
+        environment (environment)
+
         method (str): method used for generate the tree (full or grow)
-        self.MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
+        MAX_DEPTH (int): maximum depth of the generated phenotypes' derivation trees
         MAX_WRAP  (int): maximum number of time that wrapping operator is applied to genotype
+
         color (str)
         colorscheme (str)
     '''
-    def __init__(self, initial_gene_seq, root, bins, method, MAX_DEPTH, MAX_WRAP):
+    def __init__(self, initial_gene_seq, root, environment, method, MAX_DEPTH, MAX_WRAP):
         self.wrap_ctr = 0                           # global counter that count number of time that wrap func is applied
         self.i_gene = -1                            # global index that loops through all genes
         
         self.initial_gene_seq = initial_gene_seq    # global initial gene_seq (used for wrapping purposes)
         self.root = root                            # starting node
 
-        self.bins = bins
+        self.environment = environment
 
         self.method = method                        # full or grow
         self.MAX_WRAP = MAX_WRAP                    # max number of time that wrap func is applied to the sequence of genes
@@ -139,22 +143,22 @@ class Parser():
 
     def cond(self, gene_seq, node):
         '''
-        <cond>:   "observation[" N_STATES "]" COMP "states[" N_STATES "][" SPLT_PT "]"                               
+        <cond>:   "observation[" N_OBS "]" COMP "all_obs[" N_OBS "][" SPLT_PT "]"                               
         '''
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         i_gene=self.i_gene
-        child1 = Node('('+str(i_gene)+')N_STATES_obser'+'_id_'+str(id(node)), parent=node, label='N_STATES', code="observation[", color=self.color, border=self.border)
-        self.N_STATES(gene_seq, child1, True, '_obser')
+        child1 = Node('('+str(i_gene)+')N_OBS_obser'+'_id_'+str(id(node)), parent=node, label='N_OBS', code="observation[", color=self.color, border=self.border)
+        self.N_OBS(gene_seq, child1, True, '_obser')
             
         child2 = Node('('+str(i_gene)+')COMP'+'_id_'+str(id(node)), parent=node, label='COMP', code='] ', color=self.color, border=self.border)
         self.COMP(gene_seq, child2)
 
-        child3 = Node('('+str(i_gene)+')N_STATES_state'+'_id_'+str(id(node)), parent=node, label='N_STATES', code=' states[', color=self.color, border=self.border)
-        n_states = self.N_STATES(gene_seq, child3, False, '_state')
+        child3 = Node('('+str(i_gene)+')N_OBS_state'+'_id_'+str(id(node)), parent=node, label='N_OBS', code=' all_obs[', color=self.color, border=self.border)
+        n_obs = self.N_OBS(gene_seq, child3, False, '_state')
         
         child4 = Node('('+str(i_gene)+')SPT_PT'+'_id_'+str(id(node)), parent=node, label='SPLT_PT', code='][', color=self.color, border=self.border)
-        self.SPLT_PT(gene_seq, child4, n_states)       
+        self.SPLT_PT(gene_seq, child4, n_obs)       
 
 
     #-----------TERMINALS-----------------#
@@ -173,12 +177,12 @@ class Parser():
             Node('('+str(self.i_gene)+')great'+'_id_'+str(id(node)), parent=node, label='> ', code=">", color=self.color, border=self.border)
 
 
-    def N_STATES(self, gene_seq, node, incr, arr):
+    def N_OBS(self, gene_seq, node, incr, arr):
         '''
-        N_STATES: /[0-3]/
+        N_OBS: /[0-3]/
         '''
         # must compare a state of the observaion with the same state of all possible observations
-        # so the two N_STATES must have the same i_seq
+        # so the two N_OBS must have the same i_seq
         if incr:        
             self.i_gene+=1
             i_gene_same= self.i_gene
@@ -188,19 +192,15 @@ class Parser():
         if i_gene_same >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
-        idx = gene_seq[i_gene_same] % 4
-        if idx == 0:
-            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='0', code="0", color=self.color, border=self.border)
-        if idx == 1:
-            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='1', code="1", color=self.color, border=self.border)
-        if idx == 2:
-            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='2', code="2", color=self.color, border=self.border)
-        if idx == 3:
-            Node('('+str(i_gene_same)+arr+')idx'+'_id_'+str(id(node)), parent=node, label='3', code="3", color=self.color, border=self.border)
+        idx = gene_seq[i_gene_same] % len(self.environment.all_obs)
+        
+        for obs in range(len(self.environment.all_obs)):
+            if idx == obs:
+                Node('('+str(self.i_gene)+')idx'+'_id_'+str(id(node)), parent=node, label=str(idx), code=str(idx), color=self.color, border=self.border)
         return idx
 
 
-    def SPLT_PT(self, gene_seq, node, n_states):
+    def SPLT_PT(self, gene_seq, node, n_obs):
         '''
         SPLIT_PT: /[n*]/
         '''
@@ -208,9 +208,9 @@ class Parser():
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
-        idx = gene_seq[self.i_gene] % self.bins[n_states]
+        idx = gene_seq[self.i_gene] % self.environment.bins[n_obs]
 
-        for n_of_splt in range(self.bins[n_states]):
+        for n_of_splt in range(self.environment.bins[n_obs]):
             if idx == n_of_splt:
                 Node('('+str(self.i_gene)+')splt'+'_id_'+str(id(node)), parent=node, label=str(idx), code=str(idx)+"]", color=self.color, border=self.border)
 
@@ -223,8 +223,7 @@ class Parser():
         if self.i_gene >= len(gene_seq):
             gene_seq = self.wrap(gene_seq, True)
         
-        idx = gene_seq[self.i_gene] % 2
-        if idx == 0:
-            Node('('+str(self.i_gene)+')act'+'_id_'+str(id(node)), parent=node, label='0', code="0\n", color=self.color, border=self.border)
-        if idx == 1:
-            Node('('+str(self.i_gene)+')act'+'_id_'+str(id(node)), parent=node, label='1', code="1\n", color=self.color, border=self.border)
+        idx = gene_seq[self.i_gene] % len(self.environment.actions)
+        for action in self.environment.actions:
+            if idx == action:
+                Node('('+str(self.i_gene)+')act'+'_id_'+str(id(node)), parent=node, label=str(idx), code=str(idx)+"\n", color=self.color, border=self.border)

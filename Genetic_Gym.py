@@ -53,7 +53,7 @@ class Population():
         survival_threashold (float): threashold that determine if a chromosome will survive or not (mean of all fitness values)
         best_indiviual (Chromosome()): best individual of that population (the one with highest fitness)
     '''
-    def __init__(self, mutation_prob, crossover_prob, max_elite, bins):
+    def __init__(self, mutation_prob, crossover_prob, max_elite, environment):
         # Inizialization parameters
         self.mutation_prob = mutation_prob
         self.crossover_prob = crossover_prob
@@ -64,7 +64,7 @@ class Population():
         self.chromosomes_fitness = []
         self.survival_threashold = None
         self.best_individual     = None
-        self.bins = bins
+        self.environment = environment
     
     def initialize_chromosomes(self, n_chromosomes, genotype_len, MAX_DEPTH, MAX_WRAP=5, to_png=False):
         '''
@@ -88,9 +88,9 @@ class Population():
         # set phenotype
         for i, chromosome in enumerate(population):
             if i < int(len(population)/2):
-                chromosome.generate_phenotype(self.bins, 'grow', MAX_DEPTH, MAX_WRAP, to_png=to_png)
+                chromosome.generate_phenotype(self.environment, 'grow', MAX_DEPTH, MAX_WRAP, to_png=to_png)
             else:
-                chromosome.generate_phenotype(self.bins, 'full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
+                chromosome.generate_phenotype(self.environment, 'full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
         self.chromosomes = population
 
     def do_natural_selection(self):
@@ -260,7 +260,7 @@ class Population():
             # create new mutated node (root)
             mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
             # instantiate a new parser and set parser parameters back to those of the selected_node
-            parser = Parser(mut_genotype, mutated, self.bins, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             # if selected_node.name.rsplit(')')[1].rsplit('_id')[0] in ['expr_a', 'expr_b']:
             #     indent = selected_node.indent
@@ -271,7 +271,7 @@ class Population():
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
-            parser = Parser(mut_genotype, mutated, self.bins, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('cond', tree_depth=level_number)
 
@@ -351,25 +351,31 @@ class Environment():
     Args:
         env_id (str): gym environment name
         n_episodes (int): number of episodes for each chromosome evaluation
-        bins (list(int)): list that divide each state of all possible observations in discrete intervalls
+        bins (list(int)): list that divide each observation of all possible all_obs in discrete intervalls
     '''
     def __init__(self, env_id, n_episodes, bins):
-        self.bins = bins
         self.env = gym.make(env_id)
         self.n_episodes = n_episodes
-        self.states =  self.subdivide_observation_states(self.bins)
+
+        self.bins = bins
+        self.all_obs =  self.subdivide_all_obs(self.bins)
+        self.actions = np.arange(self.env.action_space.n)
+        self.n_obs = np.arange(len(self.env.observation_space.low))
+
         self.converged = False
-        self.seed = None
+        self.seed = 0
+
+        
         
 
-    def subdivide_observation_states(self, bins):
+    def subdivide_all_obs(self, bins):
         '''
-        Use bins[i] to subdivide each continous state i of an observation in bins[i]
-        number of discrete states (e.g. states[state] = [low_bound, ..., discrete_state_k, ..., high_bound]);
+        Use bins[i] to subdivide each continous observation i of a state in bins[i]
+        number of discrete all_obs (e.g. all_obs[obs] = [low_bound, ..., discrete_obs_k, ..., high_bound]);
         Args:
-            bins (list(int)): list that divide each state of all possible observations in discrete intervalls
+            bins (list(int)): list that divide each obs of all possible all_obs in discrete intervalls
         Returs: 
-            states (list(list(float))): list of list of discrete states
+            all_obs (list(list(float))): list of list of discrete all_obs
         '''
         sp_low, sp_up = self.env.observation_space.low, self.env.observation_space.high
         inf = np.finfo(np.float32).max
@@ -382,11 +388,11 @@ class Environment():
                 sp_up[i] = inf
             bounds.append([sp_low[i]/div_inf if sp_low[i] == -inf else sp_low[i], 
                                         sp_up[i]/div_inf if sp_up[i] == inf else sp_up[i]])
-        states = []
+        all_obs = []
         for i, v in enumerate(bounds):
             x = np.histogram(v, bins[i])[1] # subdivide continous interval into equal spaced bins[i] intervals
-            states.append(x)
-        return states
+            all_obs.append(x)
+        return all_obs
     
     def run_one_episode(self, process_env, chromosome, episode, prnt=False, render=False):
         '''
@@ -404,7 +410,7 @@ class Environment():
         obs = process_env.reset()
         while not done:
             if render: process_env.render()
-            action = chromosome.execute_solution(obs, self.states)
+            action = chromosome.execute_solution(obs, self.all_obs)
             obs, reward, done, _ = process_env.step(action)
             episode_reward += reward
         if prnt: print('V' if episode_reward == 200 else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
