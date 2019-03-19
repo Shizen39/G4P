@@ -105,16 +105,19 @@ class Population():
 
         elite_fitness = list(np.mean(elite_scores, axis=1))
 
+        estingued = []
+        estingued_fitness = []
         if len(elites) > self.max_elite:
             while len(elites)>self.max_elite:
                 rm= np.argmin(elite_fitness)
-                elites.pop(rm)
+                estingued.append(elites.pop(rm))
                 elite_scores.pop(rm)
-                elite_fitness.pop(rm)
+                estingued_fitness.append(elite_fitness.pop(rm))
         print("Survived [ ",len(elites)," / ",len(self.chromosomes)," ] chromosomes")
         self.chromosomes          = elites
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
+        return estingued, estingued_fitness
 
     def crossover(self, parent_A, parent_B, seed):
         '''  
@@ -215,7 +218,7 @@ class Population():
         child_B.phenotype = tree_b
         return child_A, child_B
 
-    def mutate(self, chromosome, p=None):
+    def mutate(self, chromosome, leaves_only=False, p=None):
         '''
         Mutate genes of a chromosomes by random selecting a subgraph and substituing it
         with a random generated one
@@ -225,6 +228,38 @@ class Population():
         Returns:
             mutated chromosome
         '''
+        if leaves_only:
+            for leaf in PreOrderIter(chromosome.phenotype):
+                if leaf.is_leaf:
+                    if np.random.uniform() >= 0.5:
+                        if leaf.parent.label=='COMP':
+                            choice = np.random.choice(['<=','>'])
+                            leaf.code = choice
+                            leaf.label = choice
+                        elif leaf.parent.label=='SPLT_PT':
+                            splt = self.environment.bins[int(leaf.parent.parent.children[0].children[0].label)]
+                            choice = str(np.random.choice(np.arange(splt)))
+                            leaf.code = choice+"]"
+                            leaf.label = choice
+                        elif leaf.parent.label=='ACTION':
+                            choice = str(np.random.choice(self.environment.actions))
+                            leaf.code = choice+"\n"
+                            leaf.label = choice
+                        color = '/oranges9/2'
+                        if leaf.color.rsplit('/',1)[0]=='/blues9':
+                            border = '/blues9/9'
+                        else: 
+                            border = '/oranges9/9'
+                            if int(leaf.color.rsplit('/',1)[1])<9:
+                                color = '/oranges9/'+str(int(leaf.color.rsplit('/',1)[1])+1)
+                            else:
+                                color = '/oranges9/2'
+                        leaf.color=color
+                        leaf.border=border
+            return chromosome
+
+
+
         if p!=None:
             mutation_prob = p
         else:
@@ -240,6 +275,8 @@ class Population():
         max_depth = len(levels)
         # the higher the level - the higher the probability is to be choosed
         levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
+        # if inverse_prob:
+        #     levels_prob = np.concatenate([np.array([levels_prob[0]]),np.flip(levels_prob[1:])])
         level = np.random.choice(levels, p=levels_prob)
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
@@ -255,6 +292,7 @@ class Population():
                 color = '/oranges9/'+str(int(selected_node.color.rsplit('/',1)[1])+1)
             else:
                 color = '/oranges9/2'
+        
         #print("Mutating... NODE ",selected_node.name)
         if selected_node.label == 'expr':
             # create new rando genotype of i_gen + n_descendents lenght

@@ -47,21 +47,15 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         population.chromosomes_fitness  = np.mean(population.chromosomes_scores, axis=1)
         #------------------------------#
 
-        if np.max(population.chromosomes_fitness) == last_max_fitness:  
-            ctr+=1
-            if ctr>=1:
-                print('mutating')
-                population.chromosomes = [population.mutate(child) for child in population.chromosomes]#[population.mutate(chromosome, p=0.9) if chromosome.cid == population.chromosomes[i-1].cid else chromosome for i,chromosome in enumerate(population.chromosomes)]
-        else:
-            ctr=0
+        
         #-------------EXIT IF CONVERGED-------------#
         
-        last_max_fitness = max(population.chromosomes_fitness)
-        print('\n ****** Generation', generation+1, 'max score = ', last_max_fitness , ' elite_threashold = ',np.mean(population.chromosomes_fitness),' ******\n')
+        
+        print('\n ****** Generation', generation+1, 'max score = ', max(population.chromosomes_fitness) , ' elite_threashold = ',np.mean(population.chromosomes_fitness),' ******\n')
         
         population.best_individual = population.chromosomes[np.argmax(population.chromosomes_fitness)]
         all_populations.append(population)
-        if environment.converged:
+        if environment.converged or generation==n_generations-1:
             break
         #------------------------------#
        
@@ -75,15 +69,44 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #         chromosome.tree_to_png(generation)
         #         chromosome.generate_solution(generation, to_file=True)
 
-        population.do_natural_selection()
+        estingued, estingued_fitness = population.do_natural_selection()
         
         elites_len = len(population.chromosomes)
         #------------------------------#
 
+
         #--------------CROSSING OVER--------------# 
         
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
+        if np.max(population.chromosomes_fitness) == last_max_fitness:  
+            ctr+=1
+            if ctr>=1:
+                population.chromosomes = [population.mutate(child, leaves_only=True) for child in population.chromosomes] 
+        #         unique_fit=[]
+        #         unique_chr=[]
+        #         for i,fit in enumerate(population.chromosomes_fitness):
+        #             if unique_fit.count(fit)<=2:
+        #                 unique_fit.append(fit)
+        #                 unique_chr.append(population.chromosomes[i])
+                
+        #         population.chromosomes=unique_chr
+        #         population.chromosomes_fitness=unique_fit
 
+        #         fix = population.max_elite - len(population.chromosomes)
+        #         population.chromosomes+=estingued[-fix:]
+        #         population.chromosomes_fitness+=estingued_fitness[-fix:]
+
+        #         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
+        #         elites_len = len(population.chromosomes)
+                
+        #         for _ in range(ctr):
+        #             print('mutating')
+        #             population.chromosomes = [population.mutate(child) for child in population.chromosomes]
+        else:
+            ctr=0
+        last_max_fitness = max(population.chromosomes_fitness)
+
+        print('crossing-over...')
         offsprings = []
         jobs=[]
         random_seeds=[]
@@ -107,7 +130,9 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #------------------------------#
 
         #----------------MUTATION----------------#
+        print('mutating..')    
         mutated_offsprings = [population.mutate(child) for child in offsprings]    
+           
 
         #------------------------------#
 
@@ -132,7 +157,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=1234
+        sid=2468609729 #1234
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -141,48 +166,48 @@ if __name__ == '__main__':
 
     abs_time_start = time.time()
 
-    environment = Environment(
-            env_id          = 'CartPole-v0',
-            n_episodes      = 150,
-            bins            = (6,3,6,5)
-        )
-    population = Population(
-        mutation_prob   = 0.9,
-        crossover_prob  = 0.9,
-        max_elite       = 10,
-        environment     = environment
-    )
-    all_populations = evolve(
-        population, 
-        environment, 
-        initial_n_chr = 200, 
-        n_generations = 5,
-        seed          = sid,
-        genotype_len  = 20,
-        MAX_DEPTH     = 5
-    )
-
-    # environment = Environment( 
-    #         env_id          = 'MountainCar-v0',
+    # environment = Environment(
+    #         env_id          = 'CartPole-v0',
     #         n_episodes      = 150,
-    #         bins            = (10,10)
+    #         bins            = (6,3,6,5)
     #     )
     # population = Population(
-    #     mutation_prob   = 1.0,
+    #     mutation_prob   = 0.9,
     #     crossover_prob  = 0.9,
-    #     max_elite       = 12,
+    #     max_elite       = 10,
     #     environment     = environment
     # )
     # all_populations = evolve(
     #     population, 
     #     environment, 
-    #     initial_n_chr = 250, 
+    #     initial_n_chr = 200, 
     #     n_generations = 5,
     #     seed          = sid,
     #     genotype_len  = 20,
-    #     MAX_DEPTH     = 6,
-    #     MAX_WRAP      = 2
+    #     MAX_DEPTH     = 5
     # )
+
+    environment = Environment( 
+            env_id          = 'MountainCar-v0', # 1. prova con seed diversi
+            n_episodes      = 100,
+            bins            = (10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+        )
+    population = Population(
+        mutation_prob   = 1.0,
+        crossover_prob  = 1.0,
+        max_elite       = 26, # 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
+        environment     = environment
+    )
+    all_populations = evolve(
+        population, 
+        environment, 
+        initial_n_chr = 300, # 4.  250 sì(116), 300 no (115)!!!
+        n_generations = 8,
+        seed          = sid,
+        genotype_len  = 20, # 5. questi 
+        MAX_DEPTH     = 5, # 5.poi cambia questi lasciando tutto invariato
+        MAX_WRAP      = 2 # 5.questi
+    )
 
 
     abs_time= time.time() - abs_time_start
