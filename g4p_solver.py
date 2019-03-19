@@ -78,6 +78,12 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #--------------CROSSING OVER--------------# 
         
         ranks = list(reversed(np.argsort(population.chromosomes_fitness)))
+
+        select_probs = np.array(population.chromosomes_fitness) / np.sum(population.chromosomes_fitness)
+        if np.sum(population.chromosomes_fitness) <0:
+            select_probs = select_probs[::-1]
+
+
         if np.max(population.chromosomes_fitness) == last_max_fitness:  
             ctr+=1
             if ctr>=1:
@@ -109,20 +115,25 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         print('crossing-over...')
         offsprings = []
         jobs=[]
-        random_seeds=[]
-        for i in range(elites_len):
-            seed_i=[]
-            for j in range(i+1, elites_len):
-                seed_i.append(np.random.randint(2**32 - 1))
-            random_seeds.append(seed_i)
+        random_seeds=[np.random.randint(2**32 - 1) for i in range(int((initial_n_chr - elites_len)/2))]
+        population.chromosomes= np.array(population.chromosomes)
+        parents = [population.chromosomes[np.random.choice(range(elites_len), 2, p=select_probs)] 
+                    for _ in range(int((initial_n_chr - elites_len)/2))]
+        for i,parent in enumerate(parents):
+            jobs.append(pool.apply_async(population.crossover, [parent[0], parent[1], random_seeds[i]]))
+        # for i in range(elites_len):
+        #     seed_i=[]
+        #     for j in range(i+1, elites_len):
+        #         seed_i.append(np.random.randint(2**32 - 1))
+        #     random_seeds.append(seed_i)
 
-        for i in range(elites_len):
-            for j in range(i+1,elites_len):
-                # print('crossingover ', population.chromosomes[ranks[i]].cid, population.chromosomes[ranks[j]].cid)
-                jobs.append(pool.apply_async(population.crossover, [
-                            population.chromosomes[ranks[i]], population.chromosomes[ranks[j]],
-                            random_seeds[i][j-i-1]
-                            ]))
+        # for i in range(elites_len):
+        #     for j in range(i+1,elites_len):
+        #         # print('crossingover ', population.chromosomes[ranks[i]].cid, population.chromosomes[ranks[j]].cid)
+        #         jobs.append(pool.apply_async(population.crossover, [
+        #                     population.chromosomes[ranks[i]], population.chromosomes[ranks[j]],
+        #                     random_seeds[i][j-i-1]
+        #                     ]))
         for j in jobs:
             child1,child2=j.get()
             offsprings.append(child1)
@@ -166,48 +177,48 @@ if __name__ == '__main__':
 
     abs_time_start = time.time()
 
-    # environment = Environment(
-    #         env_id          = 'CartPole-v0',
-    #         n_episodes      = 150,
-    #         bins            = (6,3,6,5)
-    #     )
-    # population = Population(
-    #     mutation_prob   = 0.9,
-    #     crossover_prob  = 0.9,
-    #     max_elite       = 10,
-    #     environment     = environment
-    # )
-    # all_populations = evolve(
-    #     population, 
-    #     environment, 
-    #     initial_n_chr = 200, 
-    #     n_generations = 5,
-    #     seed          = sid,
-    #     genotype_len  = 20,
-    #     MAX_DEPTH     = 5
-    # )
-
-    environment = Environment( 
-            env_id          = 'MountainCar-v0', # 1. prova con seed diversi
-            n_episodes      = 100,
-            bins            = (10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+    environment = Environment(
+            env_id          = 'CartPole-v0',
+            n_episodes      = 150,
+            bins            = (6,3,6,5)
         )
     population = Population(
-        mutation_prob   = 1.0,
-        crossover_prob  = 1.0,
-        max_elite       = 26, # 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
+        mutation_prob   = 0.9,
+        crossover_prob  = 0.9,
+        max_elite       = 10,
         environment     = environment
     )
     all_populations = evolve(
         population, 
         environment, 
-        initial_n_chr = 300, # 4.  250 sì(116), 300 no (115)!!!
-        n_generations = 8,
+        initial_n_chr = 200, 
+        n_generations = 5,
         seed          = sid,
-        genotype_len  = 20, # 5. questi 
-        MAX_DEPTH     = 5, # 5.poi cambia questi lasciando tutto invariato
-        MAX_WRAP      = 2 # 5.questi
+        genotype_len  = 20,
+        MAX_DEPTH     = 5
     )
+
+    # environment = Environment( 
+    #         env_id          = 'MountainCar-v0', # 1. prova con seed diversi
+    #         n_episodes      = 100,
+    #         bins            = (10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+    #     )
+    # population = Population(
+    #     mutation_prob   = 1.0,
+    #     crossover_prob  = 1.0,
+    #     max_elite       = 26, # 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
+    #     environment     = environment
+    # )
+    # all_populations = evolve(
+    #     population, 
+    #     environment, 
+    #     initial_n_chr = 300, # 4.  250 sì(116), 300 no (115)!!!
+    #     n_generations = 8,
+    #     seed          = sid,
+    #     genotype_len  = 20, # 5. questi 
+    #     MAX_DEPTH     = 5, # 5.poi cambia questi lasciando tutto invariato
+    #     MAX_WRAP      = 2 # 5.questi
+    # )
 
 
     abs_time= time.time() - abs_time_start
