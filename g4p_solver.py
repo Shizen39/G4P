@@ -115,10 +115,11 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         print('crossing-over...')
         offsprings = []
         jobs=[]
-        random_seeds=[np.random.randint(2**32 - 1) for i in range(int((initial_n_chr - elites_len)/2))]
+        dk = int(initial_n_chr/2)
+        random_seeds=[np.random.randint(2**32 - 1) for i in range(dk)]
         population.chromosomes= np.array(population.chromosomes)
         parents = [population.chromosomes[np.random.choice(range(elites_len), 2, p=select_probs)] 
-                    for _ in range(int((initial_n_chr - elites_len)/2))]
+                    for _ in range(dk)]
         for i,parent in enumerate(parents):
             jobs.append(pool.apply_async(population.crossover, [parent[0], parent[1], random_seeds[i]]))
         # for i in range(elites_len):
@@ -179,23 +180,24 @@ if __name__ == '__main__':
 
     environment = Environment(
             env_id          = 'CartPole-v0',
-            n_episodes      = 150,
+            n_episodes      = 100,
             bins            = (6,3,6,5)
         )
     population = Population(
         mutation_prob   = 0.9,
         crossover_prob  = 0.9,
-        max_elite       = 10,
+        max_elite       = 12,
         environment     = environment
     )
     all_populations = evolve(
         population, 
         environment, 
-        initial_n_chr = 200, 
+        initial_n_chr = 185, 
         n_generations = 5,
         seed          = sid,
-        genotype_len  = 20,
-        MAX_DEPTH     = 5
+        genotype_len  = 22,
+        MAX_DEPTH     = 5,
+        MAX_WRAP=3
     )
 
     # environment = Environment( 
