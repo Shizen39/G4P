@@ -39,6 +39,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
     pool = Pool(multiprocessing.cpu_count())
     #------------------------------#
     last_max_fitness=None
+    n_calci=1
     ctr=0
     for generation in range(n_generations):
         #--------------EVALUATE MODELS--------------#
@@ -87,7 +88,24 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         if np.max(population.chromosomes_fitness) == last_max_fitness:  
             ctr+=1
             if ctr>=1:
-                population.chromosomes = [population.mutate(child, leaves_only=True) for child in population.chromosomes] 
+                print('calcioinculo')
+                # n_calci+=1
+                # last = int(initial_n_chr/(n_calci*10))
+                # last_pop = population.chromosomes[:last]
+                # new_len = initial_n_chr - last
+                # population.initialize_chromosomes(new_len, genotype_len, MAX_DEPTH, MAX_WRAP)
+                # population.chromosomes += last_pop
+                population.chromosomes = [population.mutate(chromosome, leaves_only=True) for chromosome in population.chromosomes]
+                # population.mutation_prob+=0.05
+                # population.crossover_prob-=0.5
+                # population.max_elite+=1
+                # MAX_WRAP+=1
+                # MAX_DEPTH+=1
+                # ctr+=1
+                # ctr=0
+                # continue
+                # for _ in range(ctr):
+                #     population.chromosomes = [population.mutate(child, leaves_only=False) for child in population.chromosomes] 
         #         unique_fit=[]
         #         unique_chr=[]
         #         for i,fit in enumerate(population.chromosomes_fitness):
@@ -118,8 +136,9 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         dk = int(initial_n_chr/2)
         random_seeds=[np.random.randint(2**32 - 1) for i in range(dk)]
         population.chromosomes= np.array(population.chromosomes)
-        parents = [population.chromosomes[np.random.choice(range(elites_len), 2, p=select_probs)] 
-                    for _ in range(dk)]
+        parents = [population.tournament_selection(2) for _ in range(dk)]
+        # parents = [population.chromosomes[np.random.choice(range(elites_len), 2, p=select_probs)] 
+        #             for _ in range(dk)]
         for i,parent in enumerate(parents):
             jobs.append(pool.apply_async(population.crossover, [parent[0], parent[1], random_seeds[i]]))
         # for i in range(elites_len):
@@ -169,7 +188,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=2468609729 #1234
+        sid=4248699065#2468609729 #1234
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -178,49 +197,49 @@ if __name__ == '__main__':
 
     abs_time_start = time.time()
 
-    environment = Environment(
-            env_id          = 'CartPole-v0',
-            n_episodes      = 100,
-            bins            = (6,3,6,5)
-        )
-    population = Population(
-        mutation_prob   = 0.9,
-        crossover_prob  = 0.9,
-        max_elite       = 12,
-        environment     = environment
-    )
-    all_populations = evolve(
-        population, 
-        environment, 
-        initial_n_chr = 185, 
-        n_generations = 5,
-        seed          = sid,
-        genotype_len  = 22,
-        MAX_DEPTH     = 5,
-        MAX_WRAP=3
-    )
-
-    # environment = Environment( 
-    #         env_id          = 'MountainCar-v0', # 1. prova con seed diversi
+    # environment = Environment(
+    #         env_id          = 'CartPole-v0',
     #         n_episodes      = 100,
-    #         bins            = (10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+    #         bins            = (6,3,6,5)
     #     )
     # population = Population(
-    #     mutation_prob   = 1.0,
-    #     crossover_prob  = 1.0,
-    #     max_elite       = 26, # 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
+    #     mutation_prob   = 0.9,
+    #     crossover_prob  = 0.9,
+    #     max_elite       = 12,
     #     environment     = environment
     # )
     # all_populations = evolve(
     #     population, 
     #     environment, 
-    #     initial_n_chr = 300, # 4.  250 sì(116), 300 no (115)!!!
-    #     n_generations = 8,
+    #     initial_n_chr = 185, 
+    #     n_generations = 5,
     #     seed          = sid,
-    #     genotype_len  = 20, # 5. questi 
-    #     MAX_DEPTH     = 5, # 5.poi cambia questi lasciando tutto invariato
-    #     MAX_WRAP      = 2 # 5.questi
+    #     genotype_len  = 22,
+    #     MAX_DEPTH     = 5,
+    #     MAX_WRAP=3
     # )
+
+    environment = Environment( 
+            env_id          = 'MountainCar-v0', # 1. prova con seed diversi
+            n_episodes      = 100,
+            bins            = (10,10),#np.full(128, 6, int)#(10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+        )                               #prova pong cambiando gli elementi 8 10 11 12 15- 21 50 51 52 55 57- 59- 61 122 123 e gli altri lasciali di base a 2
+    population = Population(
+        mutation_prob   = 0.9,
+        crossover_prob  = 0.9,
+        max_elite       = 13, # 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
+        environment     = environment
+    )
+    all_populations = evolve(
+        population, 
+        environment, 
+        initial_n_chr = 300, # 4.  250 sì(116), 300 no (115)!!!
+        n_generations = 8,
+        seed          = sid,
+        genotype_len  = 20, # 5. questi 
+        MAX_DEPTH     = 5, # 5.poi cambia questi lasciando tutto invariato
+        MAX_WRAP      = 2 # 5.questi
+    )
 
 
     abs_time= time.time() - abs_time_start
@@ -260,7 +279,7 @@ if __name__ == '__main__':
         plt.savefig(save_dir+'plot.png', bbox_inches='tight')
     print('used seed = ', sid)
     #--------------evaluate--------------------#
-    wrap = input('Do you want to run the evolved policy and save it?    [y/N]    ')
+    wrap = 'y'#input('Do you want to run the evolved policy and save it?    [y/N]    ')
     if wrap=='y':
         import os
         save_dir = './outputs/'+environment.env.spec.id+'_results/' + str(time.time()) + '/'

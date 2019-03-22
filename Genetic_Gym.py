@@ -118,6 +118,23 @@ class Population():
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
         return estingued, estingued_fitness
+    
+    def tournament_selection(self, k):
+        range_idx = np.arange(len(self.chromosomes))
+        best_idx = None
+        for _ in range(k):
+            idx = np.random.choice(range_idx)
+            candidate1 = self.chromosomes[idx]
+            if (best_idx == None) or self.chromosomes_fitness[idx] > self.chromosomes_fitness[best_idx]:
+                best_idx = idx
+        range_idx = np.delete(range_idx, best_idx)
+        best_idx = None
+        for _ in range(k):
+            idx = np.random.choice(range_idx)
+            candidate2 = self.chromosomes[idx]
+            if (best_idx == None) or self.chromosomes_fitness[idx] > self.chromosomes_fitness[best_idx]:
+                best_idx = idx
+        return candidate1, candidate2
 
     def crossover(self, parent_A, parent_B, seed):
         '''  
@@ -231,7 +248,7 @@ class Population():
         if leaves_only:
             for leaf in PreOrderIter(chromosome.phenotype):
                 if leaf.is_leaf:
-                    if np.random.uniform() >= 0.5:
+                    if np.random.uniform() < 0.5:
                         if leaf.parent.label=='COMP':
                             choice = np.random.choice(['<=','>'])
                             leaf.code = choice
@@ -392,6 +409,8 @@ class Environment():
     def __init__(self, env_id, n_episodes, bins):
         self.env = gym.make(env_id)
         self.n_episodes = n_episodes
+        if self.env.spec.reward_threshold==None:
+            self.env.spec.reward_threshold = np.finfo(np.float32).max
 
         self.bins = bins
         self.all_obs =  self.subdivide_all_obs(self.bins)
@@ -452,7 +471,7 @@ class Environment():
         if prnt: print('V' if episode_reward >= self.env.spec.reward_threshold else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
         return episode_reward
     
-    def evaluate_chromosome(self, chromosome, i, to_file, prnt=False, render=False):
+    def evaluate_chromosome(self, envid, chromosome, i, to_file, prnt=False, render=False):
         '''
         Run self.n_episodes gym episodes with actual chromosome.
         
@@ -462,7 +481,7 @@ class Environment():
         Returns:
             chromosome_scores (list(int)): list of all scores of the chromosome, of all episodes
         '''
-        process_env = gym.make(self.env.spec.id)
+        process_env = gym.make(envid)
         process_env.seed(self.seed)
         chromosome_scores = deque(maxlen = process_env.spec.trials)
         # set chromosome solutions' code
@@ -471,6 +490,8 @@ class Environment():
         for episode in range(self.n_episodes):
             reward = self.run_one_episode(process_env, chromosome, episode, prnt, render)
             chromosome_scores.append(reward)
+            if process_env.spec.reward_threshold==None:
+                process_env.spec.reward_threshold = np.mean(chromosome_scores)
             if np.mean(chromosome_scores) >= process_env.spec.reward_threshold and episode>=process_env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
         print("(",chromosome.cid,") Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
@@ -492,8 +513,8 @@ class Environment():
         population_scores = [] 
         jobs=[]
         ctr=0
-        for i,chromosome in enumerate(population.chromosomes):                                           
-            jobs.append(pool.apply_async(self.evaluate_chromosome, [chromosome, i, to_file]))
+        for i,chromosome in enumerate(population.chromosomes):                                       
+            jobs.append(pool.apply_async(self.evaluate_chromosome, [self.env.spec.id, chromosome, i, to_file]))
         for j in jobs:
             if not self.converged:
                 # if not j.ready():
