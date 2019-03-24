@@ -39,6 +39,7 @@ class Chromosome():
         self.phenotype = None
         self.solution = None
         self.cid = i
+        self.fit=None
 
     def generate_phenotype(self, environment, method, MAX_DEPTH, MAX_WRAP, to_png=False, to_shell=False):
         '''
@@ -113,7 +114,8 @@ class Chromosome():
             action=loc['get_action'](observation, all_obs)
         except UnboundLocalError:   #observation did not pass through any if else
             #print('Assign low fitness')
-            action= 0
+            # action= 0
+            action = None
         
         return action
     

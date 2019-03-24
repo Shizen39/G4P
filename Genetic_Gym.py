@@ -235,7 +235,7 @@ class Population():
         child_B.phenotype = tree_b
         return child_A, child_B
 
-    def mutate(self, chromosome, leaves_only=False, p=None):
+    def mutate(self, chromosome, leaves_only=False, p=0.25):
         '''
         Mutate genes of a chromosomes by random selecting a subgraph and substituing it
         with a random generated one
@@ -248,7 +248,7 @@ class Population():
         if leaves_only:
             for leaf in PreOrderIter(chromosome.phenotype):
                 if leaf.is_leaf:
-                    if np.random.uniform() < 0.5:
+                    if np.random.uniform() < p:
                         if leaf.parent.label=='COMP':
                             choice = np.random.choice(['<=','>'])
                             leaf.code = choice
@@ -277,11 +277,7 @@ class Population():
 
 
 
-        if p!=None:
-            mutation_prob = p
-        else:
-            mutation_prob = self.mutation_prob
-        if np.random.uniform() > mutation_prob:
+        if np.random.uniform() > self.mutation_prob:
             return chromosome
         root = chromosome.phenotype
         # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
@@ -466,6 +462,8 @@ class Environment():
         while not done:
             if render: process_env.render()
             action = chromosome.execute_solution(obs, self.all_obs)
+            if action == None:
+                return None
             obs, reward, done, _ = process_env.step(action)
             episode_reward += reward
         if prnt: print('V' if episode_reward >= self.env.spec.reward_threshold else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
@@ -489,6 +487,9 @@ class Environment():
         # run solution code
         for episode in range(self.n_episodes):
             reward = self.run_one_episode(process_env, chromosome, episode, prnt, render)
+            if reward==None:
+                process_env.close()
+                return None
             chromosome_scores.append(reward)
             if process_env.spec.reward_threshold==None:
                 process_env.spec.reward_threshold = np.mean(chromosome_scores)
@@ -520,12 +521,15 @@ class Environment():
                 # if not j.ready():
                 #     j.wait()    # ensure order
                 score=j.get()
-                population_scores.append(score)
-                if np.mean(score)>=self.env.spec.reward_threshold:
-                    self.converged = True
+                if score == None:
+                    population_scores.append(score)
+                else:
+                    population_scores.append(score)
+                    if np.mean(score)>=self.env.spec.reward_threshold:
+                        self.converged = True
             else:
                 ctr+=1
-                if ctr==population.max_elite:   # wait to terminate the pool also if the result is converged
+                if ctr==10:   # wait to terminate the pool also if the result is converged
                     pool.terminate()
                     break
                 else:
