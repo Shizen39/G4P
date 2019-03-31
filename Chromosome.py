@@ -113,9 +113,9 @@ class Chromosome():
         try:
             action=loc['get_action'](observation, all_obs)
         except UnboundLocalError:   #observation did not pass through any if else
-            #print('Assign low fitness')
-            # action= 0
-            action = None
+            # print('Assign low fitness')
+            action= 0
+            # action = None
         
         return action
     

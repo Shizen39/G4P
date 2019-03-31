@@ -93,44 +93,118 @@ class Population():
                 chromosome.generate_phenotype(self.environment, 'full', MAX_DEPTH, MAX_WRAP, to_png=to_png)
         self.chromosomes = population
 
+
+    def fitness_share(self):
+        from difflib import SequenceMatcher
+        shareScale = 0.07
+        for i, c_i in enumerate(self.chromosomes):
+            scale = 1
+            for j, c_j in enumerate(self.chromosomes):
+                if i!=j:
+                    similarity = SequenceMatcher(None,c_i.solution[39:-15].replace("observation", "").replace("all_obs", ""), c_j.solution[39:-15].replace("observation", "").replace("all_obs", ""))
+                    similarity = similarity.ratio()
+                    if 1-similarity < shareScale:
+                        scale += 1-((1-similarity)/shareScale)
+
+            if self.chromosomes_fitness[i] >0:
+                self.chromosomes_fitness[i] /= scale
+            else:
+                self.chromosomes_fitness[i] *= scale
+
+
+
+
     def do_natural_selection(self):
         '''
         Select the elites chromosomes from actual population (based on their fitness value)
         and remove non-selected chromosomes from the population.
         '''
-        elites = [e for i, e in enumerate(self.chromosomes)                     # survive only those fitness 
-                if self.chromosomes_fitness[i] >= self.survival_threashold]     # is greater then  mean of all fitness
-        elite_scores = [e for i, e in enumerate(self.chromosomes_scores) 
-                if self.chromosomes_fitness[i] >= self.survival_threashold]
+        # elites = [e for i, e in enumerate(self.chromosomes)                     # survive only those fitness 
+        #         if self.chromosomes_fitness[i] >= self.survival_threashold]     # is greater then  mean of all fitness
+        # elite_scores = [e for i, e in enumerate(self.chromosomes_scores) 
+        #         if self.chromosomes_fitness[i] >= self.survival_threashold]
+        # idx=np.argsort(self.chromosomes_fitness)[-(self.max_elite//2):][::-1]
+        # elites = list(np.array(self.chromosomes)[idx])
+        # elite_scores = list(np.array(self.chromosomes_scores)[idx])
+        # elite_fitness = list(np.mean(elite_scores, axis=1))
 
-        elite_fitness = list(np.mean(elite_scores, axis=1))
 
-        estingued = []
-        estingued_fitness = []
-        if len(elites) > self.max_elite:
-            while len(elites)>self.max_elite:
-                rm= np.argmin(elite_fitness)
-                estingued.append(elites.pop(rm))
-                elite_scores.pop(rm)
-                estingued_fitness.append(elite_fitness.pop(rm))
+        from difflib import SequenceMatcher
+        # group by same fitnesses
+        unique_fit = [int(i) for i in self.chromosomes_fitness]
+        unique_fit,_ = np.unique(unique_fit,return_index=True)
+        groups = dict((i,[]) for i in unique_fit)
+        for i, f in enumerate(self.chromosomes_fitness):
+            for key_f in groups:
+                if int(f) == key_f:
+                    groups[key_f].append(i)
+        to_remove=dict((i,[]) for i in unique_fit)
+        for k, v in groups.items():
+            for i, c_i in enumerate(np.array(self.chromosomes)[v]):
+                ct=0
+                for j, c_j in enumerate(np.array(self.chromosomes)[v]):
+                    if i!=j and j!=None:
+                        similarity = SequenceMatcher(None,c_i.solution[39:-15].replace("observation", "").replace("all_obs", ""), c_j.solution[39:-15].replace("observation", "").replace("all_obs", ""))
+                        similarity = similarity.quick_ratio()
+                        if similarity > 0.8:
+                            ct+=1
+                if ct>=7*len(v)//10:
+                    to_remove[k].append(v[i])
+        
+        print(groups)
+        for k,idxs in to_remove.items():
+            idxs = list(set(idxs))
+            for i in idxs:
+                if len(groups[k])!=1:
+                    groups[k].remove(i)
+        
+        while len(groups)>=self.max_elite:
+            groups.pop(list(groups.keys())[0])
+        
+        n_group = len(groups)
+        for k,v in groups.items():
+            if len(v)>self.max_elite//n_group:
+                groups[k] = groups[k][:self.max_elite//n_group]
+
+        groups=np.hstack(list(groups.values()))
+        groups= [int(i) for i in groups]
+        
+
+        
+        if len(groups)>self.max_elite:
+            groups= groups[-self.max_elite:]
+        
+        elites = np.array(self.chromosomes)[groups]
+        elite_scores = np.array(self.chromosomes_scores)[groups]
+        elite_fitness = np.array(self.chromosomes_fitness)[groups]
+        print(elite_fitness)
+
+        # if len(elites) > self.max_elite:
+        #     while len(elites)>self.max_elite:
+        #         rm= np.argmin(elite_fitness)
+        #         estingued.append(elites.pop(rm))
+        #         elite_scores.pop(rm)
+        #         estingued_fitness.append(elite_fitness.pop(rm))
         print("Survived [ ",len(elites)," / ",len(self.chromosomes)," ] chromosomes")
         self.chromosomes          = elites
         self.chromosomes_scores   = elite_scores
         self.chromosomes_fitness  = elite_fitness
-        return estingued, estingued_fitness
+        # return estingued, estingued_fitness
     
-    def tournament_selection(self, k):
+    def tournament_selection(self, k, select_probs):
         range_idx = np.arange(len(self.chromosomes))
         best_idx = None
         for _ in range(k):
-            idx = np.random.choice(range_idx)
+            idx = np.random.choice(range_idx, p=select_probs)
             candidate1 = self.chromosomes[idx]
             if (best_idx == None) or self.chromosomes_fitness[idx] > self.chromosomes_fitness[best_idx]:
                 best_idx = idx
         range_idx = np.delete(range_idx, best_idx)
+        select_probs2 = np.delete(select_probs, best_idx)
+        select_probs2 = select_probs2/np.sum(select_probs2)
         best_idx = None
         for _ in range(k):
-            idx = np.random.choice(range_idx)
+            idx = np.random.choice(range_idx, p=select_probs2)
             candidate2 = self.chromosomes[idx]
             if (best_idx == None) or self.chromosomes_fitness[idx] > self.chromosomes_fitness[best_idx]:
                 best_idx = idx
@@ -142,10 +216,6 @@ class Population():
         generating two different offsprings.
         NOTE: There must exists -on the same level- at least two nodes on the two parents tree with equal name (not only label!)
         so they share the same python code structure. A search if performed if they're not finded in the first level.
-        If they don't exists, original parents are returned.
-        
-        Args:
-            parent_A (Chromosome)
             parent_B (Chromosome)
             seed (int): random seed used for initializate new RNG for every single crossover run *
         Returns:
@@ -161,21 +231,28 @@ class Population():
         rng.seed(seed)                  # with selected - random - seed 
 
         if rng.uniform() > self.crossover_prob:
-            return parent_A, parent_B
+            return parent_A, parent_B, None, None
         child_A = copy.deepcopy(parent_A)
         child_B = copy.deepcopy(parent_B)
+        child_A1 = copy.deepcopy(parent_A)
+        child_B1 = copy.deepcopy(parent_B)
+        
         tree_a = copy.deepcopy(parent_A.phenotype)
         tree_b = copy.deepcopy(parent_B.phenotype)
+        tree_a1 = copy.deepcopy(parent_A.phenotype)
+        tree_b1 = copy.deepcopy(parent_B.phenotype)
         
         if tree_a.children[0].label == tree_b.children[0].label:
             # if both first nodes tree have the same label (both are or cond or expr)
             # choose random node from first expr or second
             if tree_a.children[0].label == 'cond':
-                name = rng.choice(['expr_i', 'expr_e'])
+                name = ['expr_i', 'expr_e']
             else:
-                name = rng.choice(['expr_a', 'expr_b'])
-            selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
-            selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name][0]
+                name = ['expr_a', 'expr_b']
+            selected_node_A = [child for child in tree_a.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name[0]][0]
+            selected_node_B = [child for child in tree_b.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name[0]][0]
+            selected_node_A1 = [child for child in tree_a1.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name[1]][0]
+            selected_node_B1 = [child for child in tree_b1.children if child.name.rsplit(')')[1].rsplit('_id')[0] == name[1]][0]
         else:
             # else one tree is cond-expr_i-expr_e and the other expr_a-expr_b (they have different code!)
             # Iterate over tree using level-order strategy returning lists of nodes for every level (e.g. levels[level][node])
@@ -211,10 +288,13 @@ class Population():
                     # increment each indents of node_A family by 1 and decrement those of node_B
                     self.fix_indents(selected_node_B, selected_node_A)
             else:
-                return parent_A, parent_B
+                return parent_A, parent_B, None, None
         #---------------------------------------#
         self.colorize(selected_node_A)
         self.colorize(selected_node_B)
+        if tree_a.children[0].label == tree_b.children[0].label:
+            self.colorize(selected_node_A1)
+            self.colorize(selected_node_B1)
         #-----------------------------------------#
         #print('Crossingover... NODE', selected_node_A.name, selected_node_B.name)
         tmp_B = copy.deepcopy(selected_node_B)
@@ -233,9 +313,29 @@ class Population():
         tmp_A.parent = selected_node_B.parent
         selected_node_B.parent.children = tuple(siblings_B)
         child_B.phenotype = tree_b
-        return child_A, child_B
+        ###################################à
+        if tree_a.children[0].label == tree_b.children[0].label:
+            tmp_B1 = copy.deepcopy(selected_node_B1)
+            tmp_B1.parent=None
+            tmp_A1 = copy.deepcopy(selected_node_A1)
+            #----------- A
+            siblings_A1 = list(selected_node_A1.parent.children)      # modify the list of parents' selected_node childrens                  
+            siblings_A1[selected_node_A1.parent.children.index(       # sobstituting it with switched one
+                selected_node_A1)] = tmp_B1
+            selected_node_A1.parent.children = tuple(siblings_A1)     # and reassigning it 
+            child_A1.phenotype = tree_a1                              # set it to be the first child
+            #----------- B
+            siblings_B1 = list(selected_node_B1.parent.children)
+            siblings_B1[selected_node_B1.parent.children.index(
+                selected_node_B1)] = tmp_A1
+            tmp_A1.parent = selected_node_B1.parent
+            selected_node_B1.parent.children = tuple(siblings_B1)
+            child_B1.phenotype = tree_b1
+            return child_A, child_B, child_A1, child_B1
+        else:
+            return child_A, child_B, None, None
 
-    def mutate(self, chromosome, leaves_only=False, p=0.25):
+    def mutate(self, chromosome, add=0, leaves_only=False, inverse_prob=False, p=0.25):
         '''
         Mutate genes of a chromosomes by random selecting a subgraph and substituing it
         with a random generated one
@@ -287,9 +387,9 @@ class Population():
             levels.pop()
         max_depth = len(levels)
         # the higher the level - the higher the probability is to be choosed
-        levels_prob = np.arange(max_depth) / np.sum(np.arange(max_depth))
-        # if inverse_prob:
-        #     levels_prob = np.concatenate([np.array([levels_prob[0]]),np.flip(levels_prob[1:])])
+        levels_prob = np.power(np.arange(max_depth),2) / np.sum(np.power(np.arange(max_depth),2))
+        if inverse_prob:
+            levels_prob = np.concatenate([np.array([levels_prob[0]]),np.flip(levels_prob[1:])])
         level = np.random.choice(levels, p=levels_prob)
         # random choose a node in that level and retrieve its id
         selected_node = np.random.choice(level)
@@ -313,14 +413,14 @@ class Population():
             # create new mutated node (root)
             mutated = Node(selected_node.name, label='expr', code=selected_node.code, indent=selected_node.indent, color=color, border=border)
             # instantiate a new parser and set parser parameters back to those of the selected_node
-            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth-level_number, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=add+max_depth-level_number, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             # start generating new subtree
             mutated = parser.start_derivating('expr', tree_depth=level_number, indent=selected_node.indent)
         elif selected_node.label == 'cond':
             mut_genotype = list(np.random.randint(0,1000,size=mut_node_id + len(selected_node.descendants)))
             mutated = Node(selected_node.name, label='cond', code=selected_node.code, color=color, border=border)
-            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=max_depth, MAX_WRAP=max_depth)
+            parser = Parser(mut_genotype, mutated, self.environment, 'full', MAX_DEPTH=add+max_depth, MAX_WRAP=max_depth)
             parser.i_gene = mut_node_id+1
             mutated = parser.start_derivating('cond', tree_depth=level_number)
 
@@ -430,7 +530,7 @@ class Environment():
         '''
         sp_low, sp_up = self.env.observation_space.low, self.env.observation_space.high
         inf = np.finfo(np.float32).max
-        div_inf = 7000**10
+        div_inf = 7131**10
         bounds = []
         for i in range(len(sp_low)):
             if sp_low[i] == -np.inf:
@@ -441,8 +541,12 @@ class Environment():
                                         sp_up[i]/div_inf if sp_up[i] == inf else sp_up[i]])
         all_obs = []
         for i, v in enumerate(bounds):
-            x = np.histogram(v, bins[i])[1] # subdivide continous interval into equal spaced bins[i] intervals
+            if bins[i]==1:
+                x = np.array([(v[1] + v[0])/2,])
+            else:
+                x = np.histogram(v, bins[i]-1)[1] # subdivide continous interval into equal spaced bins[i] intervals
             all_obs.append(x)
+        print(all_obs)
         return all_obs
     
     def run_one_episode(self, process_env, chromosome, episode, prnt=False, render=False):
@@ -459,15 +563,17 @@ class Environment():
         episode_reward = 0
         done = False
         obs = process_env.reset()
+        chk=0
         while not done:
             if render: process_env.render()
             action = chromosome.execute_solution(obs, self.all_obs)
             if action == None:
-                return None
+                chk +=1
+                action=0
             obs, reward, done, _ = process_env.step(action)
             episode_reward += reward
         if prnt: print('V' if episode_reward >= self.env.spec.reward_threshold else 'X'," Ep. ",episode," terminated (", episode_reward, "rewards )")
-        return episode_reward
+        return chk, episode_reward
     
     def evaluate_chromosome(self, envid, chromosome, i, to_file, prnt=False, render=False):
         '''
@@ -483,23 +589,22 @@ class Environment():
         process_env.seed(self.seed)
         chromosome_scores = deque(maxlen = process_env.spec.trials)
         # set chromosome solutions' code
-        chromosome.generate_solution(to_file)
+        
         # run solution code
         for episode in range(self.n_episodes):
-            reward = self.run_one_episode(process_env, chromosome, episode, prnt, render)
-            if reward==None:
-                process_env.close()
-                return None
+            chk, reward = self.run_one_episode(process_env, chromosome, episode, False, render)
+            if chk!=0:
+                reward -= chk*100//abs(reward)
             chromosome_scores.append(reward)
             if process_env.spec.reward_threshold==None:
                 process_env.spec.reward_threshold = np.mean(chromosome_scores)
             if np.mean(chromosome_scores) >= process_env.spec.reward_threshold and episode>=process_env.spec.trials: #getting reward of 195.0 over 100 consecutive trials
                 break 
-        print("(",chromosome.cid,") Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
+        if prnt: print("(",chromosome.cid,") Chromosome ",i,"fitness = ",np.mean(chromosome_scores))
         process_env.close()
         return list(chromosome_scores)
     
-    def parallel_evaluate_population(self, population, pool, to_file=False):
+    def parallel_evaluate_population(self, population, pool, to_file=False, prnt=False):
         '''
         Evaluate all chromosomes of the population (in parallel - using multiprocessing)
 
@@ -514,8 +619,10 @@ class Environment():
         population_scores = [] 
         jobs=[]
         ctr=0
+        for chromosome in population.chromosomes:
+            chromosome.generate_solution(to_file)
         for i,chromosome in enumerate(population.chromosomes):                                       
-            jobs.append(pool.apply_async(self.evaluate_chromosome, [self.env.spec.id, chromosome, i, to_file]))
+            jobs.append(pool.apply_async(self.evaluate_chromosome, [self.env.spec.id, chromosome, i, to_file, prnt]))
         for j in jobs:
             if not self.converged:
                 # if not j.ready():
