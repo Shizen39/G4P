@@ -47,7 +47,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
             population.mutation_prob=0.
         n = len(population.chromosomes)
 
-        population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=False, prnt=False)
+        population.chromosomes_scores   = environment.parallel_evaluate_population(population, pool, to_file=False, prnt=True)
 
         population.chromosomes = [population.chromosomes[i] for i,score in enumerate(population.chromosomes_scores) if score!=None]
         population.chromosomes_scores = [score for score in population.chromosomes_scores if score!=None]
@@ -60,9 +60,16 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         print('\n ****** Generation', generation+1, 'max score = ', max(population.chromosomes_fitness) , ' survival_threashold = ',np.mean(population.chromosomes_fitness),' ******\nDied = ',n - len(population.chromosomes),'\n')
         # population.fitness_share()
         # print(population.chromosomes_fitness)
+        print(population.chromosomes_fitness)
 
         population.best_individual = population.chromosomes[np.argmax(population.chromosomes_fitness)]
         all_populations.append(population)
+
+
+        population.best_individual.generate_solution(-1,True)
+        population.best_individual.tree_to_png(-1)
+
+
         if environment.converged or generation==n_generations-1:
             break
         #------------------------------#
@@ -73,7 +80,19 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #-------------NATURAL SELECTION-------------#
         population.survival_threashold  = np.mean(population.chromosomes_fitness)
 
-        population.do_natural_selection()
+        population.do_natural_selection(True)
+        if len(population.chromosomes)<population.max_elite:
+            print('fixing....')
+            n_new_chr = population.max_elite - len(population.chromosomes)
+            new_pop= Population(population.mutation_prob, population.crossover_prob, population.max_elite, environment)
+            new_pop.initialize_chromosomes(n_new_chr, genotype_len, MAX_DEPTH, MAX_WRAP)
+            new_pop.chromosomes_scores = environment.parallel_evaluate_population(new_pop, pool, to_file=False, prnt=False)
+            new_pop.chromosomes_fitness = np.mean(new_pop.chromosomes_scores, axis=1)
+            population.chromosomes = list(population.chromosomes) + list(new_pop.chromosomes)
+            population.chromosomes_fitness = np.array(list(population.chromosomes_fitness) + list(new_pop.chromosomes_fitness))
+        elif len(population.chromosomes)>population.max_elite:
+            population.do_natural_selection(False)
+        print("Survived:\n",population.chromosomes_fitness)
         #------------------------------#
 
 
@@ -81,33 +100,46 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         if np.max(population.chromosomes_fitness) == last_max_fitness:  
             ctr+=1
             last_max_fitness = np.max(population.chromosomes_fitness)
+            population.mutation_prob+=(population.mutation_prob/n_generations)
             if ctr>=1:
+                print('hardly mutating......', ctr)
                 if ctr>=2:
+                    for _ in range(ctr):
+                        population.chromosomes = [population.mutate(c, np.random.randint(10), inverse_prob=True)
+                    if population.chromosomes_fitness[i]==last_max_fitness else c for i,c in enumerate(population.chromosomes)]
+                if ctr >=3:
+                    population.fitness_share()
+                    print("Shared:\n",population.chromosomes_fitness)
+
                     
                     # x+=1
                     # x = 2*x-1
                     # if ctr>2:
-                    print('sharing........')
-                    print(population.chromosomes_fitness)
-                    population.fitness_share()
-                    print(population.chromosomes_fitness)
-                    population.chromosomes = [c for i,c in enumerate(population.chromosomes) if population.chromosomes_fitness[i]!=last_max_fitness]
-                    population.chromosomes_fitness = [f for f in population.chromosomes_fitness if f!=last_max_fitness]
+                    # print(population.chromosomes_fitness)
+                    # population.fitness_share()
+                    # print(population.chromosomes_fitness)
+
+                    # population.chromosomes = [c for i,c in enumerate(population.chromosomes) if population.chromosomes_fitness[i]!=last_max_fitness]
+                    # population.chromosomes_fitness = [f for f in population.chromosomes_fitness if f!=last_max_fitness]
                     
-                print('hardly mutating......', ctr)
-                for _ in range(ctr-1):
-                    population.chromosomes = [population.mutate(c, ctr, inverse_prob=True) for i,c in enumerate(population.chromosomes)]
-                    population.chromosomes = [population.mutate(c, leaves_only=True, p=0.7) for i,c in enumerate(population.chromosomes)]
-                if ctr==1:    
-                    population.chromosomes = [population.mutate(c, leaves_only=True, p=0.3) for i,c in enumerate(population.chromosomes)]
+                    population.chromosomes = [population.mutate(c, leaves_only=True) for i,c in enumerate(population.chromosomes)]
+                    print(population.chromosomes_fitness)
+                    
+                    
+               
+                    # population.chromosomes = [population.mutate(c, leaves_only=True, p=0.7) for i,c in enumerate(population.chromosomes)]
+                # if ctr==1:    
+                #     population.chromosomes = [population.mutate(c, leaves_only=True, p=0.3) for i,c in enumerate(population.chromosomes)]
         else:
-            if ctr!=0:
+            if ctr!=0 and max(population.chromosomes_fitness)>last_max_fitness:
                 bid = np.argmax(population.chromosomes_fitness)
                 population.chromosomes_fitness[bid] = population.chromosomes_fitness[bid]*2 if population.chromosomes_fitness[bid]>0 else population.chromosomes_fitness[bid]/2
             last_max_fitness = np.max(population.chromosomes_fitness)
             ctr=0
             x=1
-            
+        
+        
+       
 
         elites_len = len(population.chromosomes)
         select_probs = np.power(population.chromosomes_fitness,x) / np.sum(np.power(population.chromosomes_fitness,x))
@@ -141,7 +173,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
 
         #----------------MUTATION----------------#
         print('mutating... p=', population.mutation_prob)    
-        mutated_offsprings = [population.mutate(child) for child in offsprings]    
+        mutated_offsprings = [population.mutate(child, generation//2) for child in offsprings]    
            
 
         #------------------------------#
@@ -149,7 +181,7 @@ def evolve(population, environment, initial_n_chr, n_generations, genotype_len, 
         #-----------NEXT GENERATION-----------# 
         # population = elite
         # mutated_offsprings += [population.best_individual,]
-        population = Population(mutation_prob=population.mutation_prob-0.05, crossover_prob=population.crossover_prob+0.05, max_elite=population.max_elite, environment=environment)
+        population = Population(mutation_prob=population.mutation_prob-(population.mutation_prob/n_generations), crossover_prob=population.crossover_prob, max_elite=population.max_elite, environment=environment)
         population.chromosomes = mutated_offsprings 
         print('( childs=', len(offsprings), ' tot_pop=', len(population.chromosomes),' )\n\n')
         #------------------------------#
@@ -168,7 +200,7 @@ if __name__ == '__main__':
 
     sid = input('Input seed for RNG    [ENTER for default, r for random]    ')
     if sid=='':
-        sid=1919494547#1438423823#2468609729 #123456          #2245427923
+        sid=1395713694#1919494547#1438423823#2468609729 #123456          #2245427923
     if sid=='r':
         sid=np.random.randint(2**32 - 1)
         print('using ', sid)
@@ -180,7 +212,7 @@ if __name__ == '__main__':
     # environment = Environment(
     #         env_id          = 'CartPole-v0',
     #         n_episodes      = 100,
-    #         bins            = (6,3,6,5) 7 4 7 6
+    #         bins            = (7, 4, 7, 6) 
     #     )
     # population = Population(
     #     mutation_prob   = 0.9,
@@ -203,11 +235,11 @@ if __name__ == '__main__':
     environment = Environment( 
             env_id          = 'MountainCar-v0', # 1. prova con seed diversi
             n_episodes      = 100,
-            bins            = (8,5),#np.full(128, 6, int)#(10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+            bins            = (6,5),#np.full(128, 6, int)#(10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
         )                               #prova pong cambiando gli elementi 8 10 11 12 15- 21 50 51 52 55 57- 59- 61 122 123 e gli altri lasciali di base a 2
     population = Population(
-        mutation_prob   = 0.9,
-        crossover_prob  = 0.5,
+        mutation_prob   = 0.95,
+        crossover_prob  = 0.6,
         max_elite       = 50, # WAS 50 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
         environment     = environment
     )
@@ -217,32 +249,32 @@ if __name__ == '__main__':
         initial_n_chr = 150, # WAS 250 4.  250 sì(116), 300 no (115)!!!
         n_generations = 25, #generation 5 -> 115
         seed          = sid,
-        genotype_len  = 30, # 5. questi 
+        genotype_len  = 100, # 5. questi 
         MAX_DEPTH     = 6, # 5.poi cambia questi lasciando tutto invariato
-        MAX_WRAP      = 4 # 5.questi
+        MAX_WRAP      = 12 # 5.questi
     )
 
 
     # environment = Environment(
     #         env_id          = 'Acrobot-v1',
     #         n_episodes      = 100,
-    #         bins            = (5,5,5,5,5,5)
+    #         bins            = (6,6,6,6,6,6)
     #     )
     # population = Population(
     #     mutation_prob   = 0.9,
     #     crossover_prob  = 0.9,
-    #     max_elite       = 22,
+    #     max_elite       = 40,
     #     environment     = environment
     # )
     # all_populations = evolve(
     #     population, 
     #     environment, 
-    #     initial_n_chr = 120, 
+    #     initial_n_chr = 150, 
     #     n_generations = 10,
     #     seed          = sid,
-    #     genotype_len  = 24,
-    #     MAX_DEPTH     = 5,
-    #     MAX_WRAP=7
+    #     genotype_len  = 111,
+    #     MAX_DEPTH     = 6,
+    #     MAX_WRAP=15
     # )
 
     # environment = Environment(
