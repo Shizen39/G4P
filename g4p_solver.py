@@ -232,50 +232,50 @@ if __name__ == '__main__':
     # )
 
 
-    environment = Environment( 
-            env_id          = 'MountainCar-v0', # 1. prova con seed diversi
-            n_episodes      = 100,
-            bins            = (6,5),#np.full(128, 6, int)#(10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
-        )                               #prova pong cambiando gli elementi 8 10 11 12 15- 21 50 51 52 55 57- 59- 61 122 123 e gli altri lasciali di base a 2
-    population = Population(
-        mutation_prob   = 0.95,
-        crossover_prob  = 0.6,
-        max_elite       = 50, # WAS 50 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
-        environment     = environment
-    )
-    all_populations = evolve(
-        population, 
-        environment, 
-        initial_n_chr = 150, # WAS 250 4.  250 sì(116), 300 no (115)!!!
-        n_generations = 25, #generation 5 -> 115
-        seed          = sid,
-        genotype_len  = 100, # 5. questi 
-        MAX_DEPTH     = 6, # 5.poi cambia questi lasciando tutto invariato
-        MAX_WRAP      = 12 # 5.questi
-    )
-
-
-    # environment = Environment(
-    #         env_id          = 'Acrobot-v1',
+    # environment = Environment( 
+    #         env_id          = 'MountainCar-v0', # 1. prova con seed diversi
     #         n_episodes      = 100,
-    #         bins            = (6,6,6,6,6,6)
-    #     )
+    #         bins            = (6,5),#np.full(128, 6, int)#(10,10) # 2. ho provato 9,10 e 10,9 ma danno meno di 116 (CON SEED 1234 !!!!!! INSERISCILO A MANO)
+    #     )                               #prova pong cambiando gli elementi 8 10 11 12 15- 21 50 51 52 55 57- 59- 61 122 123 e gli altri lasciali di base a 2
     # population = Population(
-    #     mutation_prob   = 0.9,
-    #     crossover_prob  = 0.9,
-    #     max_elite       = 40,
+    #     mutation_prob   = 0.95,
+    #     crossover_prob  = 0.6,
+    #     max_elite       = 50, # WAS 50 3. 27 no. 26 (115),  25 E 23 mi ha dato -116.85 (CHR 387 GEN 3, then not converged enymore) -> prova a diminuire max_elite
     #     environment     = environment
     # )
     # all_populations = evolve(
     #     population, 
     #     environment, 
-    #     initial_n_chr = 150, 
-    #     n_generations = 10,
+    #     initial_n_chr = 150, # WAS 250 4.  250 sì(116), 300 no (115)!!!
+    #     n_generations = 25, #generation 5 -> 115
     #     seed          = sid,
-    #     genotype_len  = 111,
-    #     MAX_DEPTH     = 6,
-    #     MAX_WRAP=15
+    #     genotype_len  = 100, # 5. questi 
+    #     MAX_DEPTH     = 6, # 5.poi cambia questi lasciando tutto invariato
+    #     MAX_WRAP      = 12 # 5.questi
     # )
+
+
+    environment = Environment(
+            env_id          = 'Acrobot-v1',
+            n_episodes      = 100,
+            bins            = (13,13,13,13,13,13) #gen 9 -80.61
+        )
+    population = Population(
+        mutation_prob   = 0.9,
+        crossover_prob  = 0.8,
+        max_elite       = 80,
+        environment     = environment
+    )
+    all_populations = evolve(
+        population, 
+        environment, 
+        initial_n_chr = 200, 
+        n_generations = 10,
+        seed          = sid,
+        genotype_len  = 150, #aymenta questo (meno no)
+        MAX_DEPTH     = 6,
+        MAX_WRAP=10
+    )
 
     # environment = Environment(
     #         env_id          = 'LunarLander-v2',
