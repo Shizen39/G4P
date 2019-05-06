@@ -160,7 +160,7 @@ class Population():
                 idxs = list(set(idxs))
                 for i in idxs:
                     if len(groups[k])!=1 and len(np.array(groups.values()).flatten())>self.max_elite:
-                        print(groups, len(np.array(groups.values()).flatten()))
+                        # print(groups, len(np.array(groups.values()).flatten()))
                         groups[k].remove(i)
             
             # while len(groups)>=self.max_elite:
@@ -173,8 +173,6 @@ class Population():
 
             groups=np.hstack(list(groups.values()))
             groups= [int(i) for i in groups]
-            
-
             
             if len(groups)>self.max_elite:
                 groups= groups[-self.max_elite:]
@@ -627,7 +625,11 @@ class Environment():
             if not self.converged:
                 # if not j.ready():
                 #     j.wait()    # ensure order
-                score=j.get()
+                try:
+                    score=j.get(120)
+                except multiprocessing.TimeoutError:
+                    score=None
+                    print(j,' not survived')
                 if score == None:
                     population_scores.append(score)
                 else:
@@ -640,6 +642,10 @@ class Environment():
                     pool.terminate()
                     break
                 else:
-                    score=j.get()
+                    try:
+                        score=j.get(60)
+                    except multiprocessing.TimeoutError:
+                        score=None
+                        print(j,' not survived')
                     population_scores.append(score)
         return population_scores
