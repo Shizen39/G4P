@@ -1,0 +1,77 @@
+def get_action(observation, all_obs):
+	if observation[0] <= all_obs[0][3]:
+		if observation[0] <= all_obs[0][0]:
+			if observation[5] > all_obs[5][5]:
+				action = 0
+
+			else:
+				action = 2
+
+		else:
+			if observation[2] > all_obs[2][11]:
+				action = 2
+
+	else:
+		if observation[4] <= all_obs[4][6]:
+			if observation[0] > all_obs[0][2]:
+				if observation[4] > all_obs[4][12]:
+					if observation[5] <= all_obs[5][12]:
+						if observation[4] > all_obs[4][9]:
+							if observation[4] <= all_obs[4][7]:
+								action = 2
+
+							else:
+								action = 2
+
+					else:
+						if observation[2] <= all_obs[2][0]:
+							if observation[2] > all_obs[2][5]:
+								action = 0
+
+						else:
+							action = 1
+
+							action = 1
+
+				else:
+					if observation[4] <= all_obs[4][12]:
+						action = 0
+
+					else:
+						if observation[4] <= all_obs[4][4]:
+							if observation[5] > all_obs[5][3]:
+								action = 1
+
+							else:
+								action = 1
+
+						else:
+							if observation[4] > all_obs[4][12]:
+								action = 0
+
+							else:
+								action = 0
+
+				if observation[1] > all_obs[1][11]:
+					if observation[1] <= all_obs[1][12]:
+						if observation[4] > all_obs[4][12]:
+							if observation[5] <= all_obs[5][12]:
+								action = 1
+
+							else:
+								action = 0
+
+						else:
+							if observation[4] <= all_obs[4][7]:
+								action = 2
+
+							else:
+								action = 2
+
+			if observation[4] > all_obs[4][6]:
+				action = 0
+
+			else:
+				action = 2
+
+	return action
