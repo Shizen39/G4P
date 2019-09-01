@@ -4,3 +4,4 @@ _virtualenv-gym
 .dist
 outputs
 _virtualenv-g4p
+.history
